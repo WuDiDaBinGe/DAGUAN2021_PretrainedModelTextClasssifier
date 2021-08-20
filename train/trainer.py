@@ -59,11 +59,14 @@ def train(config, model, train_dataset, dev_iter, test_iter=None):
                 # 验证集测试
                 first_true = first_labels.data.cpu()
                 first_predic = torch.max(first_outputs.data, 1)[1].cpu()
-                train_first_f1 = metrics.f1_score(first_true, first_predic)
+                train_first_f1 = metrics.f1_score(first_true, first_predic, average='micro')
+
                 second_true = second_labels.data.cpu()
                 second_predic = torch.max(second_outputs.data, 1)[1].cpu()
-                train_second_f1 = metrics.f1_score(second_true, second_predic)
-                train_f1 = metrics.f1_score(100 * first_true + second_true, 100 * first_predic + second_predic)
+                train_second_f1 = metrics.f1_score(second_true, second_predic, average='micro')
+
+                train_f1 = metrics.f1_score(100 * first_true + second_true, 100 * first_predic + second_predic,
+                                            average='micro')
                 dev_f1, dev_loss = evaluate(config, model, dev_iter)
                 if dev_loss < dev_best_loss:
                     dev_best_loss = dev_loss
@@ -82,9 +85,9 @@ def train(config, model, train_dataset, dev_iter, test_iter=None):
                 writer.add_scalar("f1/dev", dev_f1, total_batch)
                 writer.add_scalar("level_f1/level_f1", train_first_f1, total_batch)
                 writer.add_scalar("level_f1/level_f2", train_second_f1, total_batch)
-                model.train_pd()
+                model.train()
             total_batch += 1
-            if total_batch - last_improve >config.require_improvement:
+            if total_batch - last_improve > config.require_improvement:
                 # 早停
                 print("No optimization for a long time, auto-stopping...")
                 flag = True
@@ -93,11 +96,12 @@ def train(config, model, train_dataset, dev_iter, test_iter=None):
             break
     writer.close()
 
+
 def model_test(config, model, test_iter):
     pass
 
 
-def evaluate(config, model, dev_iter=None):
+def evaluate(config, model, dev_iter):
     model.eval()
     loss_total = 0
     predict_all = np.array([], dtype=int)
@@ -109,7 +113,10 @@ def evaluate(config, model, dev_iter=None):
             second_loss = F.cross_entropy(second_outputs, second_labels)
             total_loss = first_loss + second_loss
             loss_total += total_loss
-            labels_all = np.append(labels_all, first_labels * 100 + second_labels)
-            predict_all = np.append(predict_all, first_outputs * 100 + second_outputs)
-    f1_score = metrics.f1_score()
-    return f1_score, loss_total / len(dev_iter)
+
+            first_predic = torch.max(first_outputs.data, 1)[1].cpu()
+            second_predic = torch.max(second_outputs.data, 1)[1].cpu()
+            labels_all = np.append(labels_all, (first_labels * 100 + second_labels).cpu())
+            predict_all = np.append(predict_all, (first_predic * 100 + second_predic))
+    f1_score = metrics.f1_score(labels_all, predict_all, average='micro')
+    return f1_score, loss_total.cpu() / len(dev_iter)

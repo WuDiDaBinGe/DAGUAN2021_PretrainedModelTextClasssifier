@@ -30,8 +30,7 @@ class TextRNN_Att(nn.Module):
         self.fc2 = nn.Linear(config.hidden_size * 2, config.hidden_size)
         self.fc_second = nn.Linear(config.hidden_size, config.second_num_classes)
 
-    def forword(self, x):
-        # x, _ = x
+    def forward(self, x):
         emb = self.embedding(x)  # [batch_size, seq_len, embeding]=[128, 32, 300]
         H, _ = self.lstm(emb)  # [batch_size, seq_len, hidden_size * num_direction]=[128, 32, 256]
         M = self.tanh1(H)  # [128, 32, 256]
