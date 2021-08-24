@@ -52,8 +52,9 @@ def train(config, model, train_dataset, dev_iter, test_iter=None):
             model.zero_grad()
             first_loss = F.cross_entropy(first_outputs, first_labels)
             second_loss = F.cross_entropy(second_outputs, second_labels)
-            total_loss = first_loss + second_loss
-            total_loss.backward()
+            # total_loss = first_loss + second_loss
+            total_loss = second_loss
+            second_loss.backward()
             optimizer.step()
             if total_batch % 100 == 0:
                 # 验证集测试
@@ -63,10 +64,11 @@ def train(config, model, train_dataset, dev_iter, test_iter=None):
 
                 second_true = second_labels.data.cpu()
                 second_predic = torch.max(second_outputs.data, 1)[1].cpu()
-                train_second_f1 = metrics.f1_score(second_true, second_predic, average='micro')
+                train_second_f2 = metrics.f1_score(second_true, second_predic, average='micro')
 
-                train_f1 = metrics.f1_score(100 * first_true + second_true, 100 * first_predic + second_predic,
-                                            average='micro')
+                # train_f1 = metrics.f1_score(100 * first_true + second_true, 100 * first_predic + second_predic,
+                #                             average='micro')
+                train_f1 = train_second_f2
                 dev_f1, dev_loss = evaluate(config, model, dev_iter)
                 if dev_loss < dev_best_loss:
                     dev_best_loss = dev_loss
@@ -84,7 +86,7 @@ def train(config, model, train_dataset, dev_iter, test_iter=None):
                 writer.add_scalar("f1/train", train_f1, total_batch)
                 writer.add_scalar("f1/dev", dev_f1, total_batch)
                 writer.add_scalar("level_f1/level_f1", train_first_f1, total_batch)
-                writer.add_scalar("level_f1/level_f2", train_second_f1, total_batch)
+                writer.add_scalar("level_f1/level_f2", train_second_f2, total_batch)
                 model.train()
             total_batch += 1
             if total_batch - last_improve > config.require_improvement:
@@ -112,11 +114,14 @@ def evaluate(config, model, dev_iter):
             first_loss = F.cross_entropy(first_outputs, first_labels)
             second_loss = F.cross_entropy(second_outputs, second_labels)
             total_loss = first_loss + second_loss
-            loss_total += total_loss
+            # loss_total += total_loss
+            loss_total += second_loss
 
             first_predic = torch.max(first_outputs.data, 1)[1].cpu()
             second_predic = torch.max(second_outputs.data, 1)[1].cpu()
-            labels_all = np.append(labels_all, (first_labels * 100 + second_labels).cpu())
-            predict_all = np.append(predict_all, (first_predic * 100 + second_predic))
+            # labels_all = np.append(labels_all, (first_labels * 100 + second_labels).cpu())
+            # predict_all = np.append(predict_all, (first_predic * 100 + second_predic))
+            labels_all = np.append(labels_all, second_labels.cpu())
+            predict_all = np.append(predict_all, second_predic)
     f1_score = metrics.f1_score(labels_all, predict_all, average='micro')
     return f1_score, loss_total.cpu() / len(dev_iter)
