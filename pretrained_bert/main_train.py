@@ -3,6 +3,8 @@
 # @Author  : WuDiDaBinGe
 # @FileName: main_train.py
 # @Software: PyCharm
+import os
+
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -32,6 +34,18 @@ def train(config, dataset):
             optim.step()
             loop.set_description(f'Epoch {epoch}')
             loop.set_postfix(loss=loss.item())
+        checkpoint = {
+            'generator': model.state_dict(),
+            'optimizer': optim.state_dict(),
+            'epoch': epoch
+        }
+        check_dir = f"./bert_checkpoints"
+        if not os.path.exists(check_dir):
+            os.mkdir(check_dir)
+        torch.save(checkpoint, os.path.join(check_dir, f"ckpt_{epoch}.pth"))
+    model_save_path = './MyBert'
+    if not os.path.exists(model_save_path):
+        os.mkdir(model_save_path)
     model.save_pretrained('./MyBert')
 
 

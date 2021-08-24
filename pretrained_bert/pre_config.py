@@ -6,7 +6,6 @@
 from transformers import BertConfig
 class PreDatasetConfig(object):
     """配置参数"""
-
     def __init__(self):
         self.train_path = '/dataset/daguan_data_class/datagrand_2021_unlabeled_data.json'
         self.vocab_path = '../dataset/vocab.txt'

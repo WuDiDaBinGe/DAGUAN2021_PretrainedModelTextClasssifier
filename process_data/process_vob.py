@@ -4,8 +4,7 @@
 # @FileName: process_vob.py
 # @Software: PyCharm
 import tqdm
-
-
+input_dir = '/dataset/daguan_data_class/datagrand_2021_unlabeled_data.json'
 vocab = {}
 not_improve = 0
 max_length = -1
