@@ -4,10 +4,13 @@
 # @FileName: main_train.py
 # @Software: PyCharm
 import os
+os.environ['CUDA_VISIBLE_DEVICES']
 
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from torch.utils.data.distributed import DistributedSampler
+from torch.nn.parallel import DistributedDataParallel
 
 from transformers import BertForMaskedLM
 from transformers import AdamW
@@ -15,15 +18,24 @@ from transformers import AdamW
 from dataloader import BertDataset
 from pre_config import PreDatasetConfig
 
+
 # 使用BertForMaskedLM来预测一个屏蔽标记
 # BertForMaskedLM来预测被mask掉的单词时一定要加特殊字符[ C L S ] 和 [ S E P ] [CLS]和[SEP][CLS]和[SEP]
 def train(config, dataset):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    # 为每个进程配置GPU
+    local_rank = torch.distributed.get_rank()
+    torch.cuda.set_device(local_rank)
+    device = torch.device("cuda", local_rank)
+
     model = BertForMaskedLM(config.bert_config).to(device)
+    model = DistributedDataParallel(model, find_unused_parameters=True, device_ids=[local_rank],
+                                    output_device=local_rank)
     optim = AdamW(model.parameters(), lr=config.lr)
     for epoch in range(config.num_epochs):
         train_dataset.initial()
-        train_iter = DataLoader(dataset=dataset, batch_size=config.batch_size)
+        train_iter = DataLoader(dataset=dataset, batch_size=config.batch_size, sampler=DistributedSampler(dataset))
         # 显示进度条；保留进度条存在的痕迹，默认为True
         # tqdm()的返回值是一个可迭代对象，迭代的每一个元素就是iterable的每一个参数。该返回值可以修改进度条信息
         loop = tqdm(train_iter, leave=True)
@@ -57,7 +69,12 @@ def train(config, dataset):
 
 
 if __name__ == '__main__':
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # 初始化
+    local_rank = torch.distributed.get_rank()
+    torch.cuda.set_device(local_rank)
+    device = torch.device("cuda", local_rank)
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     config = PreDatasetConfig()
     train_dataset = BertDataset(config, device)
     train(config, train_dataset)
