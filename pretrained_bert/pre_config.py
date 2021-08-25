@@ -17,7 +17,7 @@ class PreDatasetConfig(object):
         # 用到了基于torch的transformers api，6层、12个注意力头、768维度已经512最大长度的序列。预训练的模式为MLM
         self.bert_config = BertConfig(
             vocab_size=30470,
-            max_position_embeddings=514,
+            max_position_embeddings=512,
             hidden_size=768,
             num_attention_heads=12,
             num_hidden_layers=6,
