@@ -16,7 +16,7 @@ class PreDatasetConfig(object):
         self.max_length = 512
         self.bert_config = BertConfig(
             vocab_size=30470,
-            max_position_embeddings=514,
+            max_position_embeddings=512,
             hidden_size=768,
             num_attention_heads=12,
             num_hidden_layers=6,
