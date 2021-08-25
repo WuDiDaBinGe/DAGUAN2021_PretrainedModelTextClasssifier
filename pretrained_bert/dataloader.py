@@ -10,8 +10,18 @@ from transformers import BertTokenizer
 import torch.utils.data as Data
 import random
 
-from pretrained_bert.pre_config import PreDatasetConfig
+from pre_config import PreDatasetConfig
 
+# BERT有两个预训练的任务，分别是 掩码语言模型（MLM）任务 和 句子连贯性判定（NSP）任务
+
+# https://blog.csdn.net/u011550545/article/details/90373264
+# pytorch大数据加载
+# 数据量大，无法一次读取到内存中
+# 数据存储在csv或者文本文件中(每一行是一个sample，包括feature和label)
+# 要求：每次读取一小块数据到内存；能够batch；能够shuffle
+
+# 自定义BertDataset，继承torch.utils.data.Dataset，重写__init__(),__len__(),__getitem__()，增加initial()
+# BertTokenizer，能够按照词表将文本划分成token序列， 并将各个token转换成id值。
 
 class BertDataset(Dataset):
     def __init__(self, config, device):
@@ -37,7 +47,7 @@ class BertDataset(Dataset):
         self.f_input = open(self.file_path, 'r')
         self.samples = list()
 
-        # put nraw samples into memory
+        # put nraw samples into memory 将原始样本放入内存
         for _ in range(self.n_raws):
             data = self.f_input.readline()  # data contains the feature and label
             if data:
@@ -49,9 +59,11 @@ class BertDataset(Dataset):
         if self.shuffle:
             random.shuffle(self.samples)
 
+    # 返回数据集长度，方便tqdm显示进度条长度
     def __len__(self):
         return self.file_raws
 
+    # 每次如何读数据
     def __getitem__(self, item):
         idx = self.index[0]
         data = self.samples[idx]
@@ -76,10 +88,15 @@ class BertDataset(Dataset):
         title = doc_dict['title']
         context = doc_dict['content']
         full_text = title + " " + context
+        # 将文本字符串转换成token的序列
         tokenized = self.tokenizer(full_text, max_length=self.config.max_length, padding="max_length", truncation=True)
+        # 需要张量化
         tokens = torch.tensor(tokenized['input_ids'])
         attention_mask = torch.tensor(tokenized['attention_mask'])
+        # detach()函数可以返回一个完全相同的tensor,新的tensor开辟与旧的tensor共享内存，新的tensor会脱离计算图，不会牵扯梯度计算
+        # clone()函数可以返回一个完全相同的tensor,新的tensor开辟新的内存，但是仍然留在计算图中。
         labels = tokens.detach().clone()
+        # 返回一个张量，包含了从区间[0, 1)的均匀分布中抽取的一组随机数
         rand = torch.rand(tokens.shape)
         # mask random 15% where token is not 0 [PAD], 1 [CLS], or 2 [SEP]
         mask_arr = (rand < .15) * (tokens != 101) * (tokens != 102) * (tokens != 0)
