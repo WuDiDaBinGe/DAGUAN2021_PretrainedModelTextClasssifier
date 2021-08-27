@@ -11,6 +11,7 @@ from dataloader.dataloader import load_data, spilt_dataset_pd, MyDataset
 from train.trainer import train
 from model.TextRNN_Atten import TextRNN_Att
 import numpy as np
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 if __name__ == '__main__':
@@ -18,7 +19,7 @@ if __name__ == '__main__':
     torch.manual_seed(1)
     torch.cuda.manual_seed_all(1)
 
-    config = Config(dataset='./dataset')
+    config = Config(dataset='./dataset', embedding='./dataset/pretrained_wordEmbedding/word2vec.model')
     all_set = load_data(config.train_path)
     train_pd, dev_pd = spilt_dataset_pd(all_set)
     train_dataset = MyDataset(config=config, dataset=train_pd, device=device)
