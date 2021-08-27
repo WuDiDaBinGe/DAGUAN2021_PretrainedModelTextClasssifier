@@ -7,8 +7,8 @@ from transformers import BertConfig
 class PreDatasetConfig(object):
     """配置参数"""
     def __init__(self):
-        self.train_path = '/home/wsj/dataset/2021达观杯/newdata.json'
-        self.vocab_path = '/home/wsj/dataset/2021达观杯/vocab.txt'
+        self.train_path = '/home/yxb/DAGUAN2021_classifier/datagrand_2021_unlabeled_data.json'
+        self.vocab_path = '../dataset/vocab.txt'
         # 数据集设置
         self.n_raws = 1000
         self.shuffle = False
@@ -23,6 +23,6 @@ class PreDatasetConfig(object):
             num_hidden_layers=6,
             type_vocab_size=1
         )
-        self.lr = 1e-4
-        self.num_epochs = 4
-        self.batch_size = 16
+        self.lr = 5e-5
+        self.num_epochs = 2
+        self.batch_size = 32
