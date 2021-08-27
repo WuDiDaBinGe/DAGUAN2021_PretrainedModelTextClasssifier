@@ -43,11 +43,24 @@ class MyDataset(Dataset):
             self.first_label_arr = np.asarray(self.dataset.iloc[:, 3])
             self.second_label_arr = np.asarray(self.dataset.iloc[:, 4])
         self.device = device
+        if config.embedding_pretrained_model is not None:
+            self.vob = config.embedding_pretrained_model.wv.key_to_index.keys()
+            # # 加入PAD 字符
+            # self.vob.append(0)
 
     def __getitem__(self, item):
         id_ = self.id_arr[item]
         id_ = torch.tensor(id_).to(self.device)
         token_ids = self.text_arr[item]
+        # 处理word embedding预训练的
+        if self.config.embedding_pretrained_model is not None:
+            token_ids_temp = []
+            # 如果不在word embedding中的token 则去掉
+            for index, token_id in enumerate(token_ids):
+                if token_id in self.vob:
+                    # 用0号作为padding embedding多加入了一行， 所以index需要+1
+                    token_ids_temp.append(self.config.embedding_pretrained_model.wv.key_to_index[token_id]+1)
+            token_ids = token_ids_temp
         # padding and truncated
         padding_len = self.config.pad_size - len(token_ids)
         if padding_len >= 0:

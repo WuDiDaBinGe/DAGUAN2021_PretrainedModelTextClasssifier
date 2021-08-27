@@ -14,8 +14,12 @@ import torch.nn.functional as F
 class TextRNN_Att(nn.Module):
     def __init__(self, config):
         super(TextRNN_Att, self).__init__()
-        if config.embedding_pretrained:
-            self.embedding = nn.Embedding.from_pretrained(config.embedding_pretrained, freeze=False)
+        if config.embedding_pretrained_model is not None:
+            pred_wordEmbedding = torch.tensor(config.embedding_pretrained_model.wv.vectors)
+            new_row = pred_wordEmbedding[0, :]
+            new_row = torch.unsqueeze(new_row, dim=0)
+            pred_wordEmbedding = torch.cat((new_row, pred_wordEmbedding), dim=0)
+            self.embedding = nn.Embedding.from_pretrained(pred_wordEmbedding, freeze=False)
         else:
             self.embedding = nn.Embedding(config.n_vocab, config.embed, padding_idx=config.n_vocab - 1)
         self.lstm = nn.LSTM(config.embed, config.hidden_size, config.num_layers, bidirectional=True, batch_first=True,
