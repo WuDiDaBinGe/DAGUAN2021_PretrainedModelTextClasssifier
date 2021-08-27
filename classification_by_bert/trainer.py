@@ -6,8 +6,8 @@ from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torch.nn.functional as F
-from classification_by_bert.dataloader import load_data, spilt_dataset_pd, MyDataset
-from classification_by_bert.model import Classifier
+from dataloader import load_data, spilt_dataset_pd, MyDataset
+from model import Classifier
 from config import Config
 
 
@@ -24,11 +24,13 @@ def train(config, model, train_dataset, dev_dataset):
             model.zero_grad()
             pred = model(token_ids, masks)
             loss = F.cross_entropy(pred, second_label)
-            total_loss += loss.item()
-            loss.backward()
+            # 加flood方法，试图优化过拟合
+            flood = (loss-0.35).abs()+0.35
+            total_loss += flood.item()
+            flood.backward()
             optimizer.step()
             data.set_description(f'Epoch {epoch}')
-            data.set_postfix(loss=loss.item())
+            data.set_postfix(loss=flood.item())
         (precision, recall, macro_f1, _), dev_loss, micro_f1 = evaluate(config, model, dev_dataset)
         writer.add_scalar("loss/train", total_loss, epoch)
         writer.add_scalar("loss/dev", dev_loss, epoch)
@@ -75,7 +77,7 @@ def evaluate(config, model, dev_dataset):
 
 
 if __name__ == '__main__':
-    config = Config(dataset='../dataset')
+    config = Config(dataset='/home/wsj/dataset/2021达观杯')
     writer = SummaryWriter(log_dir=config.log_path + '/' + time.strftime('%m-%d_%H.%M', time.localtime()))
     all_set = load_data(config.train_path)
     train_set, dev_set = spilt_dataset_pd(all_set)
