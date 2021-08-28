@@ -6,8 +6,8 @@ from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torch.nn.functional as F
-from classification_by_bert.dataloader import load_data, spilt_dataset_pd, MyDataset
-from classification_by_bert.model import Classifier
+from dataloader import load_data, spilt_dataset_pd, MyDataset
+from model import Classifier
 from config import Config
 
 
@@ -66,11 +66,10 @@ def evaluate(config, model, dev_dataset):
 
     macro_scores = precision_recall_fscore_support(y_true, y_pred, average='macro')
     micro_scores = precision_recall_fscore_support(y_true, y_pred, average='micro')
-    print("MACRO: ", macro_scores)
-    print("MICRO: ", micro_scores)
+    # print("MACRO: ", macro_scores)
+    # print("MICRO: ", micro_scores)
     print("Classification Report \n", classification_report(y_true, y_pred))
-    # 将信息输出到tensorboard中
-    print("Confusion Matrix \n", confusion_matrix(y_true, y_pred))
+    # print("Confusion Matrix \n", confusion_matrix(y_true, y_pred))
     return macro_scores, total_loss, micro_scores[2]
 
 
@@ -81,7 +80,7 @@ if __name__ == '__main__':
     train_set, dev_set = spilt_dataset_pd(all_set)
     train_dataset = MyDataset(config=config, dataset=train_set, device=config.device)
     dev_dataset = MyDataset(config=config, dataset=dev_set, device=config.device)
-    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    dev_dataloader = DataLoader(dev_dataset, batch_size=32, shuffle=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+    dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
     model = Classifier(config).to(config.device)
     train(config, model, train_dataloader, dev_dataloader)
