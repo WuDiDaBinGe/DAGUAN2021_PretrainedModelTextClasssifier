@@ -17,6 +17,7 @@ def train(config, model, train_dataset, dev_dataset):
     improve_epoch = 0
     for epoch in range(config.num_epochs):
         total_loss = 0
+        flood_loss = 0
         model.train()
         data = tqdm(train_dataset, leave=True)
         for inputs in data:
@@ -25,14 +26,16 @@ def train(config, model, train_dataset, dev_dataset):
             pred = model(token_ids, masks)
             loss = F.cross_entropy(pred, second_label)
             # 加flood方法，试图优化过拟合
-            flood = (loss-0.35).abs()+0.35
-            total_loss += flood.item()
+            flood = (loss - 0.35).abs() + 0.35
+            total_loss += loss.item()
             flood.backward()
+            flood_loss += flood
             optimizer.step()
             data.set_description(f'Epoch {epoch}')
-            data.set_postfix(loss=flood.item())
+            data.set_postfix(loss=loss.item(), flood=flood.item())
         (precision, recall, macro_f1, _), dev_loss, micro_f1 = evaluate(config, model, dev_dataset)
         writer.add_scalar("loss/train", total_loss, epoch)
+        writer.add_scalar("loss/flood", flood_loss, epoch)
         writer.add_scalar("loss/dev", dev_loss, epoch)
         writer.add_scalars("performance/f1", {'macro_f1': macro_f1, 'micro_f1': micro_f1}, epoch)
         writer.add_scalar("performance/precision", precision, epoch)
@@ -76,7 +79,7 @@ def evaluate(config, model, dev_dataset):
 
 
 if __name__ == '__main__':
-    config = Config(dataset='/home/wsj/dataset/2021达观杯')
+    config = Config(dataset='../dataset')
     writer = SummaryWriter(log_dir=config.log_path + '/' + time.strftime('%m-%d_%H.%M', time.localtime()))
     all_set = load_data(config.train_path)
     train_set, dev_set = spilt_dataset_pd(all_set)
