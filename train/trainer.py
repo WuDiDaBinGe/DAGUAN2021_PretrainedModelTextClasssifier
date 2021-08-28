@@ -70,6 +70,7 @@ def train(config, model, train_dataset, dev_iter, test_iter=None):
                 #                             average='micro')
                 train_f1 = train_second_f2
                 dev_f1, dev_loss = evaluate(config, model, dev_iter)
+                model.train()
                 if dev_loss < dev_best_loss:
                     dev_best_loss = dev_loss
                     torch.save(model.state_dict(), config.save_path)

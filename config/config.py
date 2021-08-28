@@ -31,9 +31,9 @@ class Config(object):
         self.second_num_classes = 35  # len(self.class_list)  # level 2 label
         self.first_num_classes = 10  # level 1 label
         self.n_vocab = 30355  # 词表大小，在运行时赋值
-        self.num_epochs = 10  # epoch数
-        self.batch_size = 16  # mini-batch大小
-        self.pad_size = 350  # 每句话处理成的长度(短填长切)
+        self.num_epochs = 50  # epoch数
+        self.batch_size = 64  # mini-batch大小
+        self.pad_size = 100  # 每句话处理成的长度(短填长切)
         self.learning_rate = 1e-3  # 学习率
         self.embed = 300  # 字向量维度, 若使用了预训练词向量，则维度统一
         self.hidden_size = 128  # lstm隐藏层
