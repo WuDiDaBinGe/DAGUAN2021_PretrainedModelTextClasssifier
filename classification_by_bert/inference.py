@@ -32,5 +32,5 @@ if __name__ == '__main__':
     test_dataset = MyDataset(config=config, dataset=test, device=config.device, test=True)
     test_iter = DataLoader(test_dataset, batch_size=1, shuffle=False)
     model = Classifier(config).to(config.device)
-    model.load_state_dict(torch.load(r"../dataset/saved_dict/classification_by_bert08-28_17.21.ckpt"))
+    model.load_state_dict(torch.load(r"../dataset/saved_dict/classification_by_bert08-28_17.21_flood.ckpt"))
     inference(config, model, test_iter)

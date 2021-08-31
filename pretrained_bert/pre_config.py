@@ -4,8 +4,11 @@
 # @FileName: pre_config.py
 # @Software: PyCharm
 from transformers import BertConfig
+
+
 class PreDatasetConfig(object):
     """配置参数"""
+
     def __init__(self):
         self.train_path = '/home/yxb/DAGUAN2021_classifier/datagrand_2021_unlabeled_data.json'
         self.vocab_path = '../dataset/vocab.txt'

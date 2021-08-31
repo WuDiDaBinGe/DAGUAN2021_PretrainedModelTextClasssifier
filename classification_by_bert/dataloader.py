@@ -3,6 +3,7 @@
 # @Author  : WuDiDaBinGe
 # @FileName: dataloader.py
 # @Software: PyCharm
+import numpy
 import numpy as np
 import pandas as pd
 import torch
@@ -75,8 +76,10 @@ if __name__ == '__main__':
     config = Config(dataset='../dataset')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     all_set = load_data(config.train_path)
-    train, dev = spilt_dataset_pd(all_set)
-    dataset = MyDataset(config=config, dataset=train, device=device)
-    dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
-    for iter, data in enumerate(dataloader):
-        print(data)
+    count = all_set.groupby(['2-label'], as_index=False)['2-label'].agg({'cnt': 'count'})
+    loss = np.array(count)[:, 1]
+    # train, dev = spilt_dataset_pd(all_set)
+    # dataset = MyDataset(config=config, dataset=train, device=device)
+    # dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
+    # for iter, data in enumerate(dataloader):
+    #     print(data)
