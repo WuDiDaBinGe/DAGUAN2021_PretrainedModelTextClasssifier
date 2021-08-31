@@ -68,13 +68,15 @@ def train(config, dataset):
         check_dir = f"./bert_checkpoints"
         if not os.path.exists(check_dir):
             os.mkdir(check_dir)
-        torch.save(checkpoint, os.path.join(check_dir, f"ckpt_{epoch}.pth"))
+        # 指定进程号保存
+        if local_rank == 0:
+            torch.save(checkpoint, os.path.join(check_dir, f"ckpt_{epoch}.pth"))
     model_save_path = './MyBert'
     if not os.path.exists(model_save_path):
         os.mkdir(model_save_path)
     ## 选择一个进程保存
     if local_rank == 0:
-        model.module.save_pretrained(model_save_path)  # save_pretrained是bert自带的保存微调模型的方法
+        model.save_pretrained(model_save_path)
         print('Saving model in %s.' % model_save_path)
 
 
