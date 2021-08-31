@@ -31,6 +31,8 @@ def train(config, dataset):
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # 4) 封装之前要把模型移到对应的gpu
     model = BertForMaskedLM(config.bert_config).to(device)
+    # 分布式训练需要将bn换成sync_batchnorm进行多卡同步，据说可以进一步加快速度
+    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     # 5) 封装
     model = torch.nn.parallel.DistributedDataParallel(model,
                                                       device_ids=[local_rank],
@@ -70,10 +72,18 @@ def train(config, dataset):
     model_save_path = './MyBert'
     if not os.path.exists(model_save_path):
         os.mkdir(model_save_path)
-    model.save_pretrained(model_save_path)
+    ## 选择一个进程保存
+    if local_rank == 0:
+        model.module.save_pretrained(model_save_path)  # save_pretrained是bert自带的保存微调模型的方法
+        print('Saving model in %s.' % model_save_path)
+
 
 
 if __name__ == '__main__':
+    # # 初始化
+    # local_rank = torch.distributed.get_rank()
+    # torch.cuda.set_device(local_rank)
+    # device = torch.device("cuda", local_rank)
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     config = PreDatasetConfig()
     train_dataset = BertDataset(config, device)
