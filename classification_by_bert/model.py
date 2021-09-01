@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 from transformers import BertModel
 
 
@@ -63,3 +64,32 @@ class Classifier(nn.Module):
         pred = self.classifier(self.dropout(pre_pred))
         # pred = self.softmax(sent_encoding)
         return pred
+
+
+class ClassifierCNN(nn.Module):
+    def __init__(self, config):
+        super(ClassifierCNN, self).__init__()
+        self.config = config
+        self.config.filter_sizes = [1, 3, 5, 7]
+        self.config.num_filters = 64
+        self.bert = BertModel.from_pretrained(self.config.bert_local)
+        for param in self.bert.parameters():
+            param.requires_grad = True
+        self.convs = nn.ModuleList(
+            [nn.Conv1d(self.config.embedding_dim, self.config.num_filters, k) for k in self.config.filter_sizes]
+        )
+        self.dropout = nn.Dropout(self.config.dropout)
+        self.fc_cnn = nn.Linear(self.config.num_filters * len(self.config.filter_sizes), self.config.second_num_classes)
+
+    def conv_and_pool(self, x, conv):
+        x = F.relu(conv(x)).squeeze(3)
+        x = F.max_pool1d(x, x.size(2)).squeeze(2)
+        return x
+
+    def forward(self, token_ids, mask):
+        outs = self.bert(token_ids, attention_mask=mask)
+        sequence_out = outs[0].unsqueeze(1)
+        out = torch.cat([self.conv_and_pool(sequence_out, conv) for conv in self.convs], 1)
+        out = self.dropout(out)
+        out = self.fc_cnn(out)
+        return out

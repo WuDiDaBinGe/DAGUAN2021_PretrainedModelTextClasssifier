@@ -1,7 +1,7 @@
 import torch
 from transformers import BertForMaskedLM
 
-from pretrained_bert.pre_config import PreDatasetConfig
+from pre_config import PreDatasetConfig
 
 config = PreDatasetConfig()
 # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

@@ -78,6 +78,9 @@ if __name__ == '__main__':
     all_set = load_data(config.train_path)
     count = all_set.groupby(['2-label'], as_index=False)['2-label'].agg({'cnt': 'count'})
     loss = np.array(count)[:, 1]
+    mean = np.mean(loss)
+    loss = loss / mean
+    print(loss)
     # train, dev = spilt_dataset_pd(all_set)
     # dataset = MyDataset(config=config, dataset=train, device=device)
     # dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
