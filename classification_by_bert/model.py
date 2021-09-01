@@ -3,6 +3,7 @@ from torch import nn
 from transformers import BertModel
 
 
+# bert+LSTM+attention
 # class Classifier(nn.Module):
 #     def __init__(self, config):
 #         super(Classifier, self).__init__()
@@ -33,6 +34,8 @@ from transformers import BertModel
 #         return pred
 
 
+# 老刘用这个
+# 模型结构同上，lstm隐藏层维度由128→512
 class Classifier(nn.Module):
     def __init__(self, config):
         super(Classifier, self).__init__()
