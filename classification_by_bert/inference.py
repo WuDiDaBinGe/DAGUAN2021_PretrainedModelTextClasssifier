@@ -27,10 +27,10 @@ def inference(config, model, test_iter):
 
 
 if __name__ == '__main__':
-    config = Config(dataset='../dataset')
+    config = Config(dataset='/home/wsj/dataset/2021达观杯')
     test = load_data(dir_path=config.test_path, test=True)
     test_dataset = MyDataset(config=config, dataset=test, device=config.device, test=True)
     test_iter = DataLoader(test_dataset, batch_size=1, shuffle=False)
     model = Classifier(config).to(config.device)
-    model.load_state_dict(torch.load(r"../dataset/saved_dict/classification_by_bert08-28_17.21_flood.ckpt"))
+    model.load_state_dict(torch.load(r"/home/wsj/dataset/2021达观杯/alpha=0.25/saved_dict/classification_by_bert.ckpt"))
     inference(config, model, test_iter)
