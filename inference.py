@@ -35,7 +35,7 @@ def inference(config, model, test_iter):
 
 
 if __name__ == '__main__':
-    config = Config(dataset='./dataset', embedding='./dataset/pretrained_wordEmbedding/word2vec.model')
+    config = Config(dataset='/home/wsj/dataset/2021达观杯', embedding='./dataset/pretrained_wordEmbedding/word2vec.model')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     test = load_data(dir_path=config.test_path, test=True)
     test_dataset = MyDataset(config=config, dataset=test, device=device, test=True)

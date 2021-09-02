@@ -22,7 +22,7 @@ class Config(object):
         self.second_num_classes = 35  # level 2 label
         self.num_epochs = 1000  # epoch数
         self.batch_size = 32  # mini-batch大小
-        self.pad_size = 60  # 每句话处理成的长度(短填长切)
+        self.pad_size = 350  # 每句话处理成的长度(短填长切)，最长344
         self.learning_rate = 1e-5  # 学习率
 
         self.hidden_size = 512  # lstm中隐藏层的维度
