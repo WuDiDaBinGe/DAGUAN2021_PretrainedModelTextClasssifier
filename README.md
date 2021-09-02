@@ -13,3 +13,6 @@
 | 8       | 69   |
 | 9       | 19   |
 | 10      | 18   |
+数据集长度90%的长度：
+
+![img.png](https://gitee.com/yxbLovewy/my-pictures/raw/master/img.png)

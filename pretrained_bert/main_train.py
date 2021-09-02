@@ -61,7 +61,7 @@ def train(config, dataset):
             loop.set_description(f'Epoch {epoch}')
             loop.set_postfix(loss=loss.item())
         checkpoint = {
-            'generator': model.state_dict(),
+            'generator': model.module.state_dict(),
             'optimizer': optim.state_dict(),
             'epoch': epoch
         }
@@ -74,9 +74,9 @@ def train(config, dataset):
     model_save_path = './MyBert'
     if not os.path.exists(model_save_path):
         os.mkdir(model_save_path)
-    ## 选择一个进程保存
+    # 选择一个进程保存
     if local_rank == 0:
-        model.save_pretrained(model_save_path)
+        model.module.save_pretrained(model_save_path)
         print('Saving model in %s.' % model_save_path)
 
 

@@ -17,11 +17,13 @@ def load_data(dir_path, test=False):
     dataset = pd.read_csv(dir_path, sep=',')
     if test is False:
         # 处理层级标签
+        # 想在tf.data.Dataset.map()里添加额外的参数，就要用lambda表达式
+        # 也就是dataset = dataset.map(lambda x: decode_example(x, resize_height, resize_width, num_class))
         dataset['1-label'] = dataset['label'].map(lambda a: int(a.split('-')[0]))
         dataset['2-label'] = dataset['label'].map(lambda a: int(a.split('-')[1]))
     return dataset
 
-
+# 训练集和测试集划分4：1
 def spilt_dataset_pd(dataset, frac=0.2):
     train_data = dataset.sample(frac=1 - frac, random_state=0, axis=0)
     test_data = dataset[~dataset.index.isin(train_data.index)]
@@ -32,8 +34,13 @@ class MyDataset(Dataset):
     def __init__(self, config, dataset, device, test=False):
         super(MyDataset, self).__init__()
         self.config = config
+        # tokenizer是一个将纯文本转换为编码的过程，该过程不涉及将词转换成为词向量，仅仅是对纯文本进行分词，并且添加[MASK]、[SEP]、[CLS]标记，然后将这些词转换为字典索引。
+        # 载入词汇表
         self.tokenizer = BertTokenizer(config.vocab_path)
         self.dataset = dataset
+        # loc函数：通过行索引 "Index" 中的具体值来取行数据
+        # iloc函数：通过行号来取行数据
+        # 分别获取第一列和第二列数据
         self.id_arr = np.asarray(self.dataset.iloc[:, 0])
         self.text_arr = np.asarray(self.dataset.iloc[:, 1])
         self.test = test
