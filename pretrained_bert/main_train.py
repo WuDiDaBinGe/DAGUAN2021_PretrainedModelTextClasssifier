@@ -74,7 +74,7 @@ def train(config, dataset):
     model_save_path = './MyBert'
     if not os.path.exists(model_save_path):
         os.mkdir(model_save_path)
-    ## 选择一个进程保存
+    # 选择一个进程保存
     if local_rank == 0:
         model.module.save_pretrained(model_save_path)
         print('Saving model in %s.' % model_save_path)
