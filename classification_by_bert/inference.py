@@ -6,6 +6,7 @@ from tqdm import tqdm
 from dataloader import load_data, MyDataset
 from model import Classifier
 from config import Config
+from bert_CNN import BertCNN
 
 
 def inference(config, model, test_iter):
@@ -27,10 +28,10 @@ def inference(config, model, test_iter):
 
 
 if __name__ == '__main__':
-    config = Config(dataset='/home/wsj/dataset/2021达观杯')
+    config = Config(dataset='../dataset')
     test = load_data(dir_path=config.test_path, test=True)
     test_dataset = MyDataset(config=config, dataset=test, device=config.device, test=True)
     test_iter = DataLoader(test_dataset, batch_size=1, shuffle=False)
-    model = Classifier(config).to(config.device)
-    model.load_state_dict(torch.load(r"/home/wsj/dataset/2021达观杯/alpha=0.25/saved_dict/classification_by_bert.ckpt"))
+    model = BertCNN(config).to(config.device)
+    model.load_state_dict(torch.load(r"../dataset/saved_dict/bert_cnn09-01_23.19.ckpt"))
     inference(config, model, test_iter)

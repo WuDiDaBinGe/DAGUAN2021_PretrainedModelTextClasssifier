@@ -8,6 +8,8 @@ from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torch.nn.functional as F
+
+from classification_by_bert.bert_CNN import BertCNN
 from dataloader import load_data, spilt_dataset_pd, MyDataset
 from model import Classifier
 from config import Config
@@ -128,8 +130,8 @@ def train(config, model, train_dataset, dev_dataset):
             token_ids, masks, first_label, second_label = inputs
             model.zero_grad()
             pred = model(token_ids, masks)
-            # loss = F.cross_entropy(pred, second_label)
-            loss = loss_func(pred, second_label)
+            loss = F.cross_entropy(pred, second_label)
+            # loss = loss_func(pred, second_label)
             # 加flood方法，试图优化过拟合
             # flood = (loss - 0.35).abs() + 0.35
             total_loss += loss.item()
@@ -139,9 +141,9 @@ def train(config, model, train_dataset, dev_dataset):
             data.set_description(f'Epoch {epoch}')
             data.set_postfix(loss=loss.item())
         (precision, recall, macro_f1, _), dev_loss, micro_f1 = evaluate(config, model, dev_dataset)
-        writer.add_scalar("loss/train", total_loss, epoch)
+        writer.add_scalar("loss/train", total_loss/len(train_dataset), epoch)
         # writer.add_scalar("loss/flood", flood_loss, epoch)
-        writer.add_scalar("loss/dev", dev_loss, epoch)
+        writer.add_scalar("loss/dev", dev_loss/len(dev_dataset), epoch)
         writer.add_scalars("performance/f1", {'macro_f1': macro_f1, 'micro_f1': micro_f1}, epoch)
         writer.add_scalar("performance/precision", precision, epoch)
         writer.add_scalar("performance/recall", recall, epoch)
@@ -184,7 +186,7 @@ def evaluate(config, model, dev_dataset):
 
 
 if __name__ == '__main__':
-    config = Config(dataset='/home/wsj/dataset/2021达观杯')
+    config = Config(dataset='../dataset')
     loss_weight = [0] * config.second_num_classes
     writer = SummaryWriter(log_dir=config.log_path + '/' + time.strftime('%m-%d_%H.%M', time.localtime()))
     all_set = load_data(config.train_path)
@@ -193,5 +195,5 @@ if __name__ == '__main__':
     dev_dataset = MyDataset(config=config, dataset=dev_set, device=config.device)
     train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
     dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
-    model = Classifier(config).to(config.device)
+    model = BertCNN(config).to(config.device)
     train(config, model, train_dataloader, dev_dataloader)
