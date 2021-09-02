@@ -86,14 +86,14 @@ def evaluate(config, model, dev_dataset):
     return macro_scores, total_loss, micro_scores[2]
 
 
-def calculate_loss_weight():
-    global loss_weight
-    count = all_set.groupby(['2-label'], as_index=False)['2-label'].agg({'cnt': 'count'})
-    loss_weight = np.array(count)[:, 1]
-    mean = np.mean(loss_weight)
-    loss_weight = loss_weight / mean
-    loss_weight = torch.Tensor(loss_weight).to(config.device)
-    # print(loss_weight)
+# def calculate_loss_weight():
+#     global loss_weight
+#     count = all_set.groupby(['2-label'], as_index=False)['2-label'].agg({'cnt': 'count'})
+#     loss_weight = np.array(count)[:, 1]
+#     mean = np.mean(loss_weight)
+#     loss_weight = loss_weight / mean
+#     loss_weight = torch.Tensor(loss_weight).to(config.device)
+#     # print(loss_weight)
 
 
 def set_seed(seed):
@@ -107,10 +107,11 @@ def set_seed(seed):
 if __name__ == '__main__':
     config = Config(dataset='../dataset')
     writer = SummaryWriter(log_dir=config.log_path + '/' + time.strftime('%m-%d_%H.%M', time.localtime()))
-    all_set = load_data(config.train_path)
+    train_set = load_data(config.train_path)
+    dev_set = load_data(config.dev_path)
     # 添加loss weight
     # calculate_loss_weight()
-    train_set, dev_set = spilt_dataset_pd(all_set)
+    # train_set, dev_set = spilt_dataset_pd(all_set)
     train_dataset = MyDataset(config=config, dataset=train_set, device=config.device)
     dev_dataset = MyDataset(config=config, dataset=dev_set, device=config.device)
     train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
