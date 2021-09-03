@@ -6,8 +6,10 @@ class Config(object):
 
     def __init__(self, dataset):
         self.model_name = "classification_by_bert"
-        self.train_path = dataset + '/datagrand_2021_train.csv'  # 训练集
-        self.dev_path = dataset + '/datagrand_2021_train.csv'  # 验证集
+        self.train_path = dataset + '/train_augment.csv'  # 增强的训练集
+        # self.train_path = dataset + '/datagrand_2021_train.csv'  # 训练集
+        # self.dev_path = dataset + '/datagrand_2021_train.csv'  # 验证集
+        self.dev_path = dataset + '/test.csv'
         self.test_path = dataset + '/datagrand_2021_test.csv'  # 测试集
         self.submit_path = dataset + '/submit.csv'
 
