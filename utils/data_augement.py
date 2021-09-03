@@ -189,9 +189,9 @@ def get_label_to_eda(dataset, low_num=100):
 
 if __name__ == '__main__':
     # 数据集增强
-    train = pd.read_csv('../dataset/datagrand_2021_train.csv', sep=',')
+    train = pd.read_csv('/home/wsj/dataset/2021达观杯/datagrand_2021_train.csv', sep=',')
     last_id = 14008
-    row_train = pd.read_csv('../dataset/datagrand_2021_train.csv', sep=',')
+    row_train = pd.read_csv('/home/wsj/dataset/2021达观杯/datagrand_2021_train.csv', sep=',')
     # train['text'] = train['text'].map(lambda a: a.split(" "))
     train['1-label'] = train['label'].map(lambda a: int(a.split('-')[0]))
     train['2-label'] = train['label'].map(lambda a: int(a.split('-')[1]))
@@ -214,5 +214,5 @@ if __name__ == '__main__':
     total_frame = pd.concat([row_train, data_augment_df])
     # shuffle
     total_frame = total_frame.sample(frac=1.0)
-    total_frame.to_csv('./train_augment.csv', index=False)
+    total_frame.to_csv('/home/wsj/dataset/2021达观杯/train_augment.csv', index=False)
     # print(len(eda(words, num_aug=9)))
