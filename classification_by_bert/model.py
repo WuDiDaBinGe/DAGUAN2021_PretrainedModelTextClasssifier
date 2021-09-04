@@ -6,6 +6,9 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from transformers import BertModel
 import numpy as np
+from config import Config
+from dataloader import load_data, MyDataset
+
 
 # class Classifier(nn.Module):
 #     def __init__(self, config):
@@ -35,8 +38,6 @@ import numpy as np
 #         pred = self.classifier(sent_encoding)
 #         # pred = self.softmax(sent_encoding)
 #         return pred
-from config import Config
-from dataloader import load_data, MyDataset
 
 
 class Classifier(nn.Module):
@@ -81,21 +82,31 @@ class ClassifierCNN(nn.Module):
         for param in self.bert.parameters():
             param.requires_grad = True
         self.convs = nn.ModuleList(
-            [nn.Conv1d(self.config.embedding_dim, self.config.num_filters, k) for k in self.config.filter_sizes]
+            [nn.Conv1d(self.config.embedding_dim, self.config.num_filters, k) for k in
+             self.config.filter_sizes]
         )
         self.dropout = nn.Dropout(self.config.dropout)
         self.fc_cnn = nn.Linear(self.config.num_filters * len(self.config.filter_sizes), self.config.second_num_classes)
-        # self.
+        dim_in = self.config.embedding_dim
+        heads_num = 8
+        dim_k = dim_v = self.config.embedding_dim
+        self.attentions = nn.ModuleList([MultiHeadSelfAttention(dim_in, dim_k, dim_v, heads_num) for _ in
+                                         range(len(self.config.filter_sizes))])
+        self.pooling = nn.AdaptiveMaxPool1d(1)
 
-    def conv_and_pool(self, x, conv):
-        x = F.relu(conv(x)).squeeze(3)
-        x = F.max_pool1d(x, x.size(2)).squeeze(2)
+    def attention_and_conv_pool(self, x, conv, attention):
+        x = attention(x)
+        x = x.transpose(1, 2)
+        x = F.relu(conv(x))
+        x = self.pooling(x).squeeze(2)
         return x
 
     def forward(self, token_ids, mask):
         outs = self.bert(token_ids, attention_mask=mask)
-        sequence_out = outs[0].unsqueeze(1)
-        out = torch.cat([self.conv_and_pool(sequence_out, conv) for conv in self.convs], 1)
+        sequence_out = outs[0]
+        out = torch.cat(
+            [self.attention_and_conv_pool(sequence_out, conv, attention) for conv, attention in
+             zip(self.convs, self.attentions)], 1)
         out = self.dropout(out)
         out = self.fc_cnn(out)
         return out
@@ -146,12 +157,13 @@ class MultiHeadSelfAttention(nn.Module):
 if __name__ == '__main__':
     config = Config(dataset='../dataset')
     train_set = load_data(config.train_path)
-    dev_set = load_data(config.dev_path)
+    # dev_set = load_data(config.dev_path)
     train_dataset = MyDataset(config=config, dataset=train_set, device=config.device)
-    dev_dataset = MyDataset(config=config, dataset=dev_set, device=config.device)
+    # dev_dataset = MyDataset(config=config, dataset=dev_set, device=config.device)
     train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
-    dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
+    # dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
     model = ClassifierCNN(config).to(config.device)
-    for iter, data in enumerate(train_dataloader):
-        token_ids, masks, first_label, second_label = data
-        model(token_ids, masks)
+    for inputs in train_dataloader:
+        token_ids, masks, first_label, second_label = inputs
+        model.zero_grad()
+        pred = model(token_ids, masks)
