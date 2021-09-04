@@ -3,23 +3,20 @@ import time
 import torch
 from sklearn.metrics import precision_recall_fscore_support, classification_report, confusion_matrix
 from tensorboardX import SummaryWriter
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from tqdm import tqdm
 import torch.nn.functional as F
 from dataloader import load_data, spilt_dataset_pd, MyDataset
 from model import Classifier
+from bert_CNN import BertCNN
 from config import Config
 from focalloss import FocalLoss
+from ASLloss import ASLSingleLabel
 
 loss_weight = []
 
 
-# # 二级标签35个
-# loss_func = FocalLoss(class_num=35)
-
-# loss_func = ASLSingleLabel()
-
-def train(config, model, train_dataset, dev_dataset):
+def train(config, model, train_dataset, dev_dataset, loss_function):
     # (precision, recall, macro_f1, _), dev_loss, micro_f1 = evaluate(config, model, dev_dataset)
     # return
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
@@ -35,7 +32,7 @@ def train(config, model, train_dataset, dev_dataset):
             model.zero_grad()
             pred = model(token_ids, masks)
             # loss = F.cross_entropy(pred, second_label)
-            loss = loss_func(pred, second_label)
+            loss = loss_function(pred, second_label)
             # 加flood方法，试图优化过拟合
             # flood = (loss - 0.35).abs() + 0.35
             total_loss += loss.item()
@@ -84,23 +81,28 @@ def evaluate(config, model, dev_dataset):
     micro_scores = precision_recall_fscore_support(y_true, y_pred, average='micro')
     # print("MACRO: ", macro_scores)
     # print("MICRO: ", micro_scores)
-    print("Classification Report \n", classification_report(y_true, y_pred))
+    print("Classification Report \n", classification_report(y_true, y_pred, digits=4))
     # print("Confusion Matrix \n", confusion_matrix(y_true, y_pred))
     return macro_scores, total_loss, micro_scores[2]
 
 
 if __name__ == '__main__':
-    config = Config(dataset='/home/wsj/dataset/2021达观杯')
-    loss_weight = [0] * config.second_num_classes
+    config = Config(dataset='../dataset/', name='BertCNN')
+
     writer = SummaryWriter(log_dir=config.log_path + '/' + time.strftime('%m-%d_%H.%M', time.localtime()))
-    # all_set = load_data(config.train_path)
-    # train_set, dev_set = spilt_dataset_pd(all_set)
-    train_set = load_data(config.train_path)
+    all_set = load_data(config.train_path)
+    train_dataset = MyDataset(config=config, dataset=all_set, device=config.device)
+
     dev_set = load_data(config.dev_path)
-    train_dataset = MyDataset(config=config, dataset=train_set, device=config.device)
     dev_dataset = MyDataset(config=config, dataset=dev_set, device=config.device)
+    # 重要性采样
+    # sample_weights = 1.0 / torch.tensor(config.every_class_nums, dtype=torch.float)
+    # train_targets = train_dataset.get_all_classes()
+    # sample_weights = sample_weights[train_targets]
+    #
+    # sampler = WeightedRandomSampler(weights=sample_weights, num_samples=len(sample_weights), replacement=True)
+    # shuffle 是 false
     train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
     dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
     model = Classifier(config).to(config.device)
-    # model.load_state_dict(torch.load(r"/home/wsj/dataset/2021达观杯/ACL-loss_baseline/saved_dict/classification_by_bert.ckpt"))
-    train(config, model, train_dataloader, dev_dataloader)
+    train(config, model, train_dataloader, dev_dataloader, loss_function=FocalLoss(class_num=35))

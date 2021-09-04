@@ -1,6 +1,7 @@
 from torch.autograd import Variable
 from torch import nn
 import torch
+import torch.nn.functional as F
 
 
 # gamma=0，效果等同交叉熵函数
@@ -68,6 +69,7 @@ class FocalLoss(nn.Module):
             loss = batch_loss.sum()
         return loss
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     # 二级标签35个
     loss_func = FocalLoss(class_num=35)

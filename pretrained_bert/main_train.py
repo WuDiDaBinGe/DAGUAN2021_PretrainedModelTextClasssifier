@@ -80,7 +80,6 @@ def train(config, dataset):
         print('Saving model in %s.' % model_save_path)
 
 
-
 if __name__ == '__main__':
     # # 初始化
     # local_rank = torch.distributed.get_rank()

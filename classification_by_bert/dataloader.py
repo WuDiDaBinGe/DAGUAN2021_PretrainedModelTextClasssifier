@@ -23,6 +23,7 @@ def load_data(dir_path, test=False):
         dataset['2-label'] = dataset['label'].map(lambda a: int(a.split('-')[1]))
     return dataset
 
+
 # 训练集和测试集划分4：1
 def spilt_dataset_pd(dataset, frac=0.2):
     train_data = dataset.sample(frac=1 - frac, random_state=0, axis=0)
@@ -78,15 +79,18 @@ class MyDataset(Dataset):
     def __len__(self):
         return len(self.id_arr)
 
+    def get_all_classes(self):
+        return self.second_label_arr - 1
+
 
 if __name__ == '__main__':
-    config = Config(dataset='../dataset')
+    config = Config(dataset='../dataset', name="BertCNN")
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     all_set = load_data(config.train_path)
     count = all_set.groupby(['2-label'], as_index=False)['2-label'].agg({'cnt': 'count'})
     loss = np.array(count)[:, 1]
-    # train, dev = spilt_dataset_pd(all_set)
-    # dataset = MyDataset(config=config, dataset=train, device=device)
+    dataset = MyDataset(config=config, dataset=all_set, device=device)
+    print(dataset.get_all_classes())
     # dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
     # for iter, data in enumerate(dataloader):
     #     print(data)
