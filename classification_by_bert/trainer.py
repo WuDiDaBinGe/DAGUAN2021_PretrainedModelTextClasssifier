@@ -10,12 +10,13 @@ from dataloader import load_data, spilt_dataset_pd, MyDataset
 from model import Classifier
 from config import Config
 from focalloss import FocalLoss
+from ASLloss import ASLSingleLabel
 
 loss_weight = []
 
 
-# # 二级标签35个
-# loss_func = FocalLoss(class_num=35)
+# 二级标签35个
+loss_func = FocalLoss(class_num=35 , alpha=0.75)
 
 # loss_func = ASLSingleLabel()
 
@@ -40,7 +41,6 @@ def train(config, model, train_dataset, dev_dataset):
             # flood = (loss - 0.35).abs() + 0.35
             total_loss += loss.item()
             loss.backward()
-            # flood_loss += flood
             optimizer.step()
             data.set_description(f'Epoch {epoch}')
             data.set_postfix(loss=loss.item())
@@ -93,14 +93,14 @@ if __name__ == '__main__':
     config = Config(dataset='/home/wsj/dataset/2021达观杯')
     loss_weight = [0] * config.second_num_classes
     writer = SummaryWriter(log_dir=config.log_path + '/' + time.strftime('%m-%d_%H.%M', time.localtime()))
-    # all_set = load_data(config.train_path)
-    # train_set, dev_set = spilt_dataset_pd(all_set)
-    train_set = load_data(config.train_path)
-    dev_set = load_data(config.dev_path)
+    all_set = load_data(config.train_path)
+    train_set, dev_set = spilt_dataset_pd(all_set)
+    # train_set = load_data(config.train_path)
+    # dev_set = load_data(config.dev_path)
     train_dataset = MyDataset(config=config, dataset=train_set, device=config.device)
     dev_dataset = MyDataset(config=config, dataset=dev_set, device=config.device)
     train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
     dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
     model = Classifier(config).to(config.device)
-    # model.load_state_dict(torch.load(r"/home/wsj/dataset/2021达观杯/ACL-loss_baseline/saved_dict/classification_by_bert.ckpt"))
+    # model.load_state_dict(torch.load(r"/home/wsj/dataset/2021达观杯/augment_focal_loss/saved_dict/classification_by_bert.ckpt"))
     train(config, model, train_dataloader, dev_dataloader)
