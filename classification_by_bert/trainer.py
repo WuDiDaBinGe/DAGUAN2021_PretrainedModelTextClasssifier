@@ -7,17 +7,18 @@ from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torch.nn.functional as F
-
-from classification_by_bert.AsymmetricLoss import ASLSingleLabel
+import torch.nn as nn
+from AsymmetricLoss import ASLSingleLabel
+from focalloss import FocalLoss
 from dataloader import load_data, spilt_dataset_pd, MyDataset
-from model import Classifier
+from model import Classifier, ClassifierCNN
 from config import Config
 
 loss_weight = None
 
 
 def train(config, model, train_dataset, dev_dataset):
-    loss_f = ASLSingleLabel()
+    loss_f = FocalLoss(config.second_num_classes)
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
     prev_best_perf = -100000
     start_epoch = 0
@@ -81,19 +82,9 @@ def evaluate(config, model, dev_dataset):
     micro_scores = precision_recall_fscore_support(y_true, y_pred, average='micro')
     # print("MACRO: ", macro_scores)
     # print("MICRO: ", micro_scores)
-    print("Classification Report \n", classification_report(y_true, y_pred))
+    print("Classification Report \n", classification_report(y_true, y_pred, digits=4))
     # print("Confusion Matrix \n", confusion_matrix(y_true, y_pred))
     return macro_scores, total_loss, micro_scores[2]
-
-
-# def calculate_loss_weight():
-#     global loss_weight
-#     count = all_set.groupby(['2-label'], as_index=False)['2-label'].agg({'cnt': 'count'})
-#     loss_weight = np.array(count)[:, 1]
-#     mean = np.mean(loss_weight)
-#     loss_weight = loss_weight / mean
-#     loss_weight = torch.Tensor(loss_weight).to(config.device)
-#     # print(loss_weight)
 
 
 def set_seed(seed):
@@ -109,13 +100,10 @@ if __name__ == '__main__':
     writer = SummaryWriter(log_dir=config.log_path + '/' + time.strftime('%m-%d_%H.%M', time.localtime()))
     train_set = load_data(config.train_path)
     dev_set = load_data(config.dev_path)
-    # 添加loss weight
-    # calculate_loss_weight()
-    # train_set, dev_set = spilt_dataset_pd(all_set)
     train_dataset = MyDataset(config=config, dataset=train_set, device=config.device)
     dev_dataset = MyDataset(config=config, dataset=dev_set, device=config.device)
     train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
     dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
-    model = Classifier(config).to(config.device)
-    set_seed(0)
+    model = ClassifierCNN(config).to(config.device)
+    set_seed(5)
     train(config, model, train_dataloader, dev_dataloader)

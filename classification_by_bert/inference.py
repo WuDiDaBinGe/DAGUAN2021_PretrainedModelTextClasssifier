@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from dataloader import load_data, MyDataset
-from model import Classifier
+from model import Classifier, ClassifierCNN
 from config import Config
 
 
@@ -27,10 +27,10 @@ def inference(config, model, test_iter):
 
 
 if __name__ == '__main__':
-    config = Config(dataset='/home/wsj/dataset/2021达观杯')
+    config = Config(dataset='../dataset')
     test = load_data(dir_path=config.test_path, test=True)
     test_dataset = MyDataset(config=config, dataset=test, device=config.device, test=True)
     test_iter = DataLoader(test_dataset, batch_size=1, shuffle=False)
-    model = Classifier(config).to(config.device)
-    model.load_state_dict(torch.load(r"/home/wsj/dataset/2021达观杯/saved_dict/classification_by_bert.ckpt"))
+    model = ClassifierCNN(config).to(config.device)
+    model.load_state_dict(torch.load(r"/home/kevin/PycharmProjects/DAGUAN2021_PretrainedModelTextClasssifier/dataset/saved_dict/classification_by_bert09-04_10.04.ckpt"))
     inference(config, model, test_iter)

@@ -1,11 +1,10 @@
-from math import sqrt
-
 import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from transformers import BertModel
-import numpy as np
+
+from Multi_Heads import MultiHeadSelfAttention
 from config import Config
 from dataloader import load_data, MyDataset
 
@@ -112,46 +111,50 @@ class ClassifierCNN(nn.Module):
         return out
 
 
-class MultiHeadSelfAttention(nn.Module):
-    dim_in: int  # input dimension
-    dim_k: int  # key and query dimension
-    dim_v: int  # value dimension
-    num_heads: int  # number of heads, for each head, dim_* = dim_* // num_heads
-    """
-    
-    """
+class ClassifierCNNInPaper(nn.Module):
+    def __init__(self, config):
+        super(ClassifierCNNInPaper, self).__init__()
+        self.config = config
+        # 定义卷积核size
+        self.config.filter_sizes = [1, 3, 5, 7]
+        # 定义卷积核个数
+        self.config.num_filters = 64
+        # 加载预训练bert
+        self.bert = BertModel.from_pretrained(self.config.bert_local)
+        # required gradient
+        for param in self.bert.parameters():
+            param.requires_grad = True
 
-    def __init__(self, dim_in, dim_k, dim_v, num_heads=8):
-        super(MultiHeadSelfAttention, self).__init__()
-        assert dim_k % num_heads == 0 and dim_v % num_heads == 0, "dim_k and dim_v must be multiple of num_heads"
-        self.dim_in = dim_in
-        self.dim_k = dim_k
-        self.dim_v = dim_v
-        self.num_heads = num_heads
-        self.linear_q = nn.Linear(dim_in, dim_k, bias=False)
-        self.linear_k = nn.Linear(dim_in, dim_k, bias=False)
-        self.linear_v = nn.Linear(dim_in, dim_v, bias=False)
-        self._norm_fact = 1 / sqrt(dim_k // num_heads)
+        self.convs = nn.ModuleList(
+            [nn.Conv1d(self.config.embedding_dim, self.config.num_filters, k) for k in
+             self.config.filter_sizes]
+        )
+        self.dropout = nn.Dropout(0.1)
+        self.fc_cnn = nn.Linear(self.config.num_filters * len(self.config.filter_sizes), self.config.second_num_classes)
+        dim_in = self.config.embedding_dim
+        heads_num = 8
+        dim_k = dim_v = self.config.embedding_dim
+        self.attentions = nn.ModuleList([MultiHeadSelfAttention(dim_in, dim_k, dim_v, heads_num) for _ in
+                                         range(len(self.config.filter_sizes))])
+        self.pooling = nn.AdaptiveMaxPool1d(1)
 
-    def forward(self, x):
-        # x: tensor of shape (batch, n, dim_in)
-        batch, n, dim_in = x.shape
-        assert dim_in == self.dim_in
+    def attention_and_conv_pool(self, x, conv, attention):
+        x = attention(x)
+        x = x.transpose(1, 2)
+        x = F.relu(conv(x))
+        x = self.pooling(x).squeeze(2)
+        x = self.dropout(x)
+        return x
 
-        nh = self.num_heads
-        dk = self.dim_k // nh  # dim_k of each head
-        dv = self.dim_v // nh  # dim_v of each head
-
-        q = self.linear_q(x).reshape(batch, n, nh, dk).transpose(1, 2)  # (batch, nh, n, dk)
-        k = self.linear_k(x).reshape(batch, n, nh, dk).transpose(1, 2)  # (batch, nh, n, dk)
-        v = self.linear_v(x).reshape(batch, n, nh, dv).transpose(1, 2)  # (batch, nh, n, dv)
-
-        dist = torch.matmul(q, k.transpose(2, 3)) * self._norm_fact  # batch, nh, n, n
-        dist = torch.softmax(dist, dim=-1)  # batch, nh, n, n
-
-        att = torch.matmul(dist, v)  # batch, nh, n, dv
-        att = att.transpose(1, 2).reshape(batch, n, self.dim_v)  # batch, n, dim_v
-        return att
+    def forward(self, token_ids, mask):
+        outs = self.bert(token_ids, attention_mask=mask)
+        sequence_out = outs[0]
+        sequence_out = self.dropout(sequence_out)
+        out = torch.cat(
+            [self.attention_and_conv_pool(sequence_out, conv, attention) for conv, attention in
+             zip(self.convs, self.attentions)], 1)
+        out = self.fc_cnn(out)
+        return out
 
 
 if __name__ == '__main__':

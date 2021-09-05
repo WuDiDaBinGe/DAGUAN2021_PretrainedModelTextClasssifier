@@ -23,7 +23,7 @@ class Config(object):
         self.dropout = 0.5  # 随机失活
         self.require_improvement = 50  # 若超过100epoch效果还没提升，则提前结束训练
         self.second_num_classes = 35  # level 2 label
-        self.num_epochs = 1000  # epoch数
+        self.num_epochs = 150  # epoch数
         self.batch_size = 32  # mini-batch大小
         self.pad_size = 350  # 每句话处理成的长度(短填长切)
         self.learning_rate = 1e-5  # 学习率
