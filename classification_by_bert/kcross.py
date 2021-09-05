@@ -114,5 +114,5 @@ if __name__ == '__main__':
     all_dataset = MyDataset(config=config, dataset=all_set, device=config.device)
     # all_dataloader = DataLoader(all_dataset, batch_size=config.batch_size, shuffle=True)
     model = Classifier(config).to(config.device)
-    # model.load_state_dict(torch.load(r"/home/wsj/dataset/2021达观杯/augment_focal_loss/saved_dict/classification_by_bert.ckpt"))
+    # model.load_state_dict(torch.load(r"/home/wsj/dataset/2021达观杯/saved_dict/classification_by_bert.ckpt"))
     train(config, model, all_dataset)
