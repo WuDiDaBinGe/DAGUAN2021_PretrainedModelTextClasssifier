@@ -8,6 +8,8 @@ from Multi_Heads import MultiHeadSelfAttention
 from config import Config
 from dataloader import load_data, MyDataset
 
+nn.LayerNorm
+
 
 # class Classifier(nn.Module):
 #     def __init__(self, config):
@@ -124,36 +126,51 @@ class ClassifierCNNInPaper(nn.Module):
         # required gradient
         for param in self.bert.parameters():
             param.requires_grad = True
-
+        # 4个1维卷积
         self.convs = nn.ModuleList(
             [nn.Conv1d(self.config.embedding_dim, self.config.num_filters, k) for k in
              self.config.filter_sizes]
         )
-        self.dropout = nn.Dropout(0.1)
-        self.fc_cnn = nn.Linear(self.config.num_filters * len(self.config.filter_sizes), self.config.second_num_classes)
-        dim_in = self.config.embedding_dim
+        # 多头注意力的头数
         heads_num = 8
-        dim_k = dim_v = self.config.embedding_dim
+        # 多个头的输入总维度，与bert的输出的隐藏维度相同
+        dim_in = dim_k = dim_v = self.config.embedding_dim
+        # 4个8头注意力
         self.attentions = nn.ModuleList([MultiHeadSelfAttention(dim_in, dim_k, dim_v, heads_num) for _ in
                                          range(len(self.config.filter_sizes))])
+        # 0.1的dropout
+        self.dropout = nn.Dropout(0.1)
+        # 输出层
+        self.pred = nn.Linear(self.config.num_filters * len(self.config.filter_sizes), self.config.second_num_classes)
+        # 全局最大池化
         self.pooling = nn.AdaptiveMaxPool1d(1)
+        # Layer Normalization，输入维度为（350，768）
+        self.LN = nn.LayerNorm([350, 768])
 
     def attention_and_conv_pool(self, x, conv, attention):
-        x = attention(x)
+        # 输入经过Attention
+        out = attention(x)
+        out = F.softmax(out)
+        # attention的输出与输入x相加并经过LN
+        x = self.LN(x + out)
+        # 对x进行转置，构建convolution的输入
         x = x.transpose(1, 2)
+        # 经过convolution和relu激活
         x = F.relu(conv(x))
+        # 经过全局最大池化
         x = self.pooling(x).squeeze(2)
+        # 进行随机失活
         x = self.dropout(x)
         return x
 
     def forward(self, token_ids, mask):
         outs = self.bert(token_ids, attention_mask=mask)
-        sequence_out = outs[0]
-        sequence_out = self.dropout(sequence_out)
+        # 进行随机失活
+        sequence_out = self.dropout(outs[0])
         out = torch.cat(
             [self.attention_and_conv_pool(sequence_out, conv, attention) for conv, attention in
              zip(self.convs, self.attentions)], 1)
-        out = self.fc_cnn(out)
+        out = self.pred(out)
         return out
 
 
