@@ -6,8 +6,8 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from transformers import BertModel
 import numpy as np
-from config import Config
-from dataloader import load_data, MyDataset
+from classification_by_bert.config import Config
+from classification_by_bert.dataloader import load_data, MyDataset
 
 
 # class Classifier(nn.Module):

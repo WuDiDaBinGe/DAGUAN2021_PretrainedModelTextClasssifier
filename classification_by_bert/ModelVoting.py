@@ -8,11 +8,9 @@ from torch.utils.data import DataLoader
 import torch
 from tqdm import tqdm
 import torch.nn.functional as F
-from classification_by_bert.bert_CNN import BertCNN
 from classification_by_bert.config import Config
-from classification_by_bert.dataloader import load_data, MyDataset, spilt_dataset_pd
-from classification_by_bert.trainer import evaluate
-from classification_by_bert.model import Classifier
+from classification_by_bert.dataloader import load_data, MyDataset
+from classification_by_bert.model.model import Classifier, ClassifierCNN
 
 
 def model_voting(model_list, dev_iter):
@@ -29,7 +27,8 @@ def model_voting(model_list, dev_iter):
         pred_total = pred_list[0]
         for i in range(1, len(pred_list)):
             pred_total += pred_list[i]
-        total_loss += F.cross_entropy(pred_total/len(pred_list), second_label).item()
+        pred_total = pred_total / len(pred_list)
+        total_loss += F.cross_entropy(pred_total, second_label).item()
         pred = pred_total.squeeze()
         _, predict = torch.max(pred, 1)
         if torch.cuda.is_available():
@@ -53,10 +52,10 @@ if __name__ == '__main__':
 
     all_set = load_data(config.dev_path)
     dev_dataset = MyDataset(config=config, dataset=all_set, device=config.device)
-    dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
+    dev_dataloader = DataLoader(dev_dataset, batch_size=2, shuffle=True)
 
-    model = BertCNN(config).to(config.device)
-    model.load_state_dict(torch.load(r"../dataset/saved_dict/bert_cnn09-01_09.09_best.ckpt"))
+    model = ClassifierCNN(config).to(config.device)
+    model.load_state_dict(torch.load(r"../dataset/saved_dict/classification_by_bert09-04_10.04.ckpt"))
 
     model_asl = Classifier(config).to(config.device)
     model_asl.load_state_dict(
@@ -65,6 +64,6 @@ if __name__ == '__main__':
     model_focal = Classifier(config).to(config.device)
     model_focal.load_state_dict(
         torch.load(r'../dataset/saved_dict/0.568_focal_loss_baseline/saved_dict/classification_by_bert.ckpt'))
-    model_list = [model_focal, model_asl, model]
+    model_list = [model_asl, model_focal, model]
 
     model_voting(model_list, dev_dataloader)

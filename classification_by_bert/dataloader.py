@@ -10,7 +10,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import BertTokenizer
 
-from config import Config
+from classification_by_bert.config import Config
 
 
 def load_data(dir_path, test=False):

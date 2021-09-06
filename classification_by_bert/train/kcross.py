@@ -1,23 +1,22 @@
 import time
 
 import torch
-from sklearn.metrics import precision_recall_fscore_support, classification_report, confusion_matrix
+from sklearn.metrics import precision_recall_fscore_support, classification_report
 from tensorboardX import SummaryWriter
-from torch.utils.data import DataLoader,Subset
+from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 import torch.nn.functional as F
-from dataloader import load_data, spilt_dataset_pd, MyDataset
-from model import Classifier
-from config import Config
-from focalloss import FocalLoss
-from ASLloss import ASLSingleLabel
+from classification_by_bert.dataloader import load_data, MyDataset
+from classification_by_bert.model.model import Classifier
+from classification_by_bert.config import Config
+from classification_by_bert.model.focalloss import FocalLoss
 from sklearn.model_selection import KFold
 
 loss_weight = []
 
-
 # 二级标签35个
 loss_func = FocalLoss(class_num=35)
+
 
 # loss_func = ASLSingleLabel()
 
@@ -73,7 +72,6 @@ def train(config, model, all_dataset):
             elif epoch - improve_epoch >= config.require_improvement:
                 print("model didn't improve for a long time! So break!!!")
                 break
-
 
     writer.close()
 
