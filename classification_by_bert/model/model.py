@@ -1,13 +1,14 @@
-from math import sqrt
-
 import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from transformers import BertModel
-import numpy as np
-from classification_by_bert.config import Config
-from classification_by_bert.dataloader import load_data, MyDataset
+
+from Multi_Heads import MultiHeadSelfAttention
+from config import Config
+from dataloader import load_data, MyDataset
+
+nn.LayerNorm
 
 
 # class Classifier(nn.Module):
@@ -112,46 +113,65 @@ class ClassifierCNN(nn.Module):
         return out
 
 
-class MultiHeadSelfAttention(nn.Module):
-    dim_in: int  # input dimension
-    dim_k: int  # key and query dimension
-    dim_v: int  # value dimension
-    num_heads: int  # number of heads, for each head, dim_* = dim_* // num_heads
-    """
-    
-    """
+class ClassifierCNNInPaper(nn.Module):
+    def __init__(self, config):
+        super(ClassifierCNNInPaper, self).__init__()
+        self.config = config
+        # 定义卷积核size
+        self.config.filter_sizes = [1, 3, 5, 7]
+        # 定义卷积核个数
+        self.config.num_filters = 64
+        # 加载预训练bert
+        self.bert = BertModel.from_pretrained(self.config.bert_local)
+        # required gradient
+        for param in self.bert.parameters():
+            param.requires_grad = True
+        # 4个1维卷积
+        self.convs = nn.ModuleList(
+            [nn.Conv1d(self.config.embedding_dim, self.config.num_filters, k) for k in
+             self.config.filter_sizes]
+        )
+        # 多头注意力的头数
+        heads_num = 8
+        # 多个头的输入总维度，与bert的输出的隐藏维度相同
+        dim_in = dim_k = dim_v = self.config.embedding_dim
+        # 4个8头注意力
+        self.attentions = nn.ModuleList([MultiHeadSelfAttention(dim_in, dim_k, dim_v, heads_num) for _ in
+                                         range(len(self.config.filter_sizes))])
+        # 0.1的dropout
+        self.dropout = nn.Dropout(0.1)
+        # 输出层
+        self.pred = nn.Linear(self.config.num_filters * len(self.config.filter_sizes), self.config.second_num_classes)
+        # 全局最大池化
+        self.pooling = nn.AdaptiveMaxPool1d(1)
+        # Layer Normalization，输入维度为（350，768）
+        self.LN = nn.LayerNorm([350, 768])
 
-    def __init__(self, dim_in, dim_k, dim_v, num_heads=8):
-        super(MultiHeadSelfAttention, self).__init__()
-        assert dim_k % num_heads == 0 and dim_v % num_heads == 0, "dim_k and dim_v must be multiple of num_heads"
-        self.dim_in = dim_in
-        self.dim_k = dim_k
-        self.dim_v = dim_v
-        self.num_heads = num_heads
-        self.linear_q = nn.Linear(dim_in, dim_k, bias=False)
-        self.linear_k = nn.Linear(dim_in, dim_k, bias=False)
-        self.linear_v = nn.Linear(dim_in, dim_v, bias=False)
-        self._norm_fact = 1 / sqrt(dim_k // num_heads)
+    def attention_and_conv_pool(self, x, conv, attention):
+        # 输入经过Attention
+        out = attention(x)
+        out = F.softmax(out)
+        # attention的输出与输入x相加并经过LN
+        x = self.LN(x + out)
+        # 对x进行转置，构建convolution的输入
+        x = x.transpose(1, 2)
+        # 经过convolution和relu激活
+        x = F.relu(conv(x))
+        # 经过全局最大池化
+        x = self.pooling(x).squeeze(2)
+        # 进行随机失活
+        x = self.dropout(x)
+        return x
 
-    def forward(self, x):
-        # x: tensor of shape (batch, n, dim_in)
-        batch, n, dim_in = x.shape
-        assert dim_in == self.dim_in
-
-        nh = self.num_heads
-        dk = self.dim_k // nh  # dim_k of each head
-        dv = self.dim_v // nh  # dim_v of each head
-
-        q = self.linear_q(x).reshape(batch, n, nh, dk).transpose(1, 2)  # (batch, nh, n, dk)
-        k = self.linear_k(x).reshape(batch, n, nh, dk).transpose(1, 2)  # (batch, nh, n, dk)
-        v = self.linear_v(x).reshape(batch, n, nh, dv).transpose(1, 2)  # (batch, nh, n, dv)
-
-        dist = torch.matmul(q, k.transpose(2, 3)) * self._norm_fact  # batch, nh, n, n
-        dist = torch.softmax(dist, dim=-1)  # batch, nh, n, n
-
-        att = torch.matmul(dist, v)  # batch, nh, n, dv
-        att = att.transpose(1, 2).reshape(batch, n, self.dim_v)  # batch, n, dim_v
-        return att
+    def forward(self, token_ids, mask):
+        outs = self.bert(token_ids, attention_mask=mask)
+        # 进行随机失活
+        sequence_out = self.dropout(outs[0])
+        out = torch.cat(
+            [self.attention_and_conv_pool(sequence_out, conv, attention) for conv, attention in
+             zip(self.convs, self.attentions)], 1)
+        out = self.pred(out)
+        return out
 
 
 if __name__ == '__main__':
