@@ -6,7 +6,7 @@ from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader, WeightedRandomSampler
 from tqdm import tqdm
 import torch.nn.functional as F
-from model.bert_CNN import BertCNN
+from model.bert_CNN import BertCNN,Bert4LayerCNN,Bert4Layer
 from classification_by_bert.dataloader import load_data, MyDataset
 from classification_by_bert.model.model import Classifier
 from classification_by_bert.config import Config
@@ -62,22 +62,23 @@ def evaluate(config, model, dev_dataset, loss_function=None):
     y_true, y_pred = [], []
     model.eval()
     total_loss = 0
-    for data in tqdm(dev_dataset):
-        token_ids, masks, first_label, second_label = data
-        model.zero_grad()
-        pred = model(token_ids, masks)
-        if loss_function is None:
-            total_loss += F.cross_entropy(pred, second_label).item()
-        else:
-            total_loss += loss_function(pred, second_label).item()
-        pred = pred.squeeze()
-        _, predict = torch.max(pred, 1)
-        if torch.cuda.is_available():
-            predict = predict.cpu()
-            second_label = second_label.cpu()
-        y_pred += list(predict.numpy())
-        temp_true = list(second_label.numpy())
-        y_true += temp_true
+    with torch.no_grad():
+        for data in tqdm(dev_dataset):
+            token_ids, masks, first_label, second_label = data
+            model.zero_grad()
+            pred = model(token_ids, masks)
+            if loss_function is None:
+                total_loss += F.cross_entropy(pred, second_label).item()
+            else:
+                total_loss += loss_function(pred, second_label).item()
+            pred = pred.squeeze()
+            _, predict = torch.max(pred, 1)
+            if torch.cuda.is_available():
+                predict = predict.cpu()
+                second_label = second_label.cpu()
+            y_pred += list(predict.numpy())
+            temp_true = list(second_label.numpy())
+            y_true += temp_true
 
     macro_scores = precision_recall_fscore_support(y_true, y_pred, average='macro')
     micro_scores = precision_recall_fscore_support(y_true, y_pred, average='micro')
@@ -89,7 +90,7 @@ def evaluate(config, model, dev_dataset, loss_function=None):
 
 
 if __name__ == '__main__':
-    config = Config(dataset='../dataset/', name='BertCNN')
+    config = Config(dataset='../dataset/', name='Bert4layerPooling')
 
     writer = SummaryWriter(log_dir=config.log_path + '/' + time.strftime('%m-%d_%H.%M', time.localtime()))
     all_set = load_data(config.train_path)
@@ -104,7 +105,7 @@ if __name__ == '__main__':
 
     sampler = WeightedRandomSampler(weights=sample_weights, num_samples=len(sample_weights), replacement=True)
     # shuffle 是 false
-    train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False)
+    train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, sampler=sampler)
     dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
-    model = BertCNN(config).to(config.device)
+    model = Bert4Layer(config).to(config.device)
     train(config, model, train_dataloader, dev_dataloader, loss_function=FocalLoss(config.second_num_classes, 2))

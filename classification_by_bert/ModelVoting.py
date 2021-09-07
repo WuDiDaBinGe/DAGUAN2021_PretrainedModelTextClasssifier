@@ -18,15 +18,16 @@ def model_voting(model_list, dev_iter):
     for model in model_list:
         model.eval()
     total_loss = 0
+    model_weights = [0.4, 0.3, 0.3]
     for data in tqdm(dev_iter):
         token_ids, masks, first_label, second_label = data
         pred_list = []
         for model in model_list:
             model.zero_grad()
             pred_list.append(model(token_ids, masks))
-        pred_total = pred_list[0]
+        pred_total = pred_list[0] * model_weights[0]
         for i in range(1, len(pred_list)):
-            pred_total += pred_list[i]
+            pred_total += pred_list[i] * model_weights[i]
         pred_total = pred_total / len(pred_list)
         total_loss += F.cross_entropy(pred_total, second_label).item()
         pred = pred_total.squeeze()

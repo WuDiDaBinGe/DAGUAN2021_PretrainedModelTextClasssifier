@@ -4,11 +4,10 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from transformers import BertModel
 
-from Multi_Heads import MultiHeadSelfAttention
-from config import Config
-from dataloader import load_data, MyDataset
+from classification_by_bert.model.Multi_Heads import MultiHeadSelfAttention
+from classification_by_bert.config import Config
+from classification_by_bert.dataloader import load_data, MyDataset
 
-nn.LayerNorm
 
 
 # class Classifier(nn.Module):
