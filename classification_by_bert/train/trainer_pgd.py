@@ -12,14 +12,14 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 from tqdm import tqdm
 import torch.nn.functional as F
 import numpy as np
-from DAGUAN2021_PretrainedModelTextClasssifier.classification_by_bert.model.PGD import PGD
-from DAGUAN2021_PretrainedModelTextClasssifier.model.bert_CNN import BertCNN, Bert4LayerCNN, Bert4Layer
-from DAGUAN2021_PretrainedModelTextClasssifier.classification_by_bert.dataloader import load_data, MyDataset
-from DAGUAN2021_PretrainedModelTextClasssifier.classification_by_bert.model.model import Classifier
-from DAGUAN2021_PretrainedModelTextClasssifier.classification_by_bert.config import Config
-from DAGUAN2021_PretrainedModelTextClasssifier.classification_by_bert.train.trainer import evaluate
-from DAGUAN2021_PretrainedModelTextClasssifier.classification_by_bert.model.focalloss import FocalLoss
-from DAGUAN2021_PretrainedModelTextClasssifier.classification_by_bert.model.ASLloss import ASLSingleLabel
+from classification_by_bert.model.PGD import PGD
+from model.bert_CNN import BertCNN, Bert4LayerCNN, Bert4Layer
+from classification_by_bert.dataloader import load_data, MyDataset
+from classification_by_bert.model.model import Classifier
+from classification_by_bert.config import Config
+from classification_by_bert.train.trainer import evaluate
+from classification_by_bert.model.focalloss import FocalLoss
+from classification_by_bert.model.ASLloss import ASLSingleLabel
 
 np.random.seed(1)
 torch.manual_seed(1)
@@ -57,7 +57,7 @@ def train(config, model, train_dataset, dev_dataset, loss_function):
                 # 在embedding上添加对抗扰动, first attack时备份param.data
                 pgd.attack(is_first_attack=(t == 0))
                 if t != K - 1:
-                    optimizer.zero_grad()
+                    model.zero_grad()
                 else:
                     # 恢复正常的grad
                     pgd.restore_grad()
@@ -65,7 +65,7 @@ def train(config, model, train_dataset, dev_dataset, loss_function):
                 loss_adv = loss_function(pred_adv, second_label)
                 loss_adv.backward()  # 反向传播，在正常的grad基础上，累加对抗训练的梯度
             # 恢复Embedding的参数
-            pgd.restore(emb_name='word_embeddings')
+            pgd.restore()
             # 梯度下降，更新参数
             optimizer.step()
             optimizer.zero_grad()
