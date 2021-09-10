@@ -36,11 +36,12 @@ class PGD():
         return self.emb_backup[param_name] + r
 
     def backup_grad(self):
+        # 排除bert.pool.dense层
         for name, param in self.model.named_parameters():
-            if param.requires_grad:
+            if param.requires_grad and param.grad is not None:
                 self.grad_backup[name] = param.grad.clone()
 
     def restore_grad(self):
         for name, param in self.model.named_parameters():
-            if param.requires_grad:
+            if param.requires_grad and name in self.grad_backup.keys():
                 param.grad = self.grad_backup[name]
