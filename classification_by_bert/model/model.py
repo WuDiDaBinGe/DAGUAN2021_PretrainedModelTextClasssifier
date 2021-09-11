@@ -2,12 +2,13 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from transformers import BertModel
+from transformers import BertModel, AutoConfig
 
-from classification_by_bert.model.Multi_Heads import MultiHeadSelfAttention
-from classification_by_bert.config import Config
-from classification_by_bert.dataloader import load_data, MyDataset
+from DAGUAN2021_PretrainedModelTextClasssifier.classification_by_bert.model.Multi_Heads import MultiHeadSelfAttention
+from DAGUAN2021_PretrainedModelTextClasssifier.classification_by_bert.config import Config
+from DAGUAN2021_PretrainedModelTextClasssifier.dataloader.dataloader import load_data, MyDataset
 
+nn.LayerNorm
 
 
 # class Classifier(nn.Module):
@@ -171,6 +172,48 @@ class ClassifierCNNInPaper(nn.Module):
              zip(self.convs, self.attentions)], 1)
         out = self.pred(out)
         return out
+
+
+class ClassifierWithBert4Layer(nn.Module):
+    def __init__(self, config):
+        super(ClassifierWithBert4Layer, self).__init__()
+        self.config = config
+        config_ = AutoConfig.from_pretrained(config.bert_local)
+        # 获取每层的输出
+        config_.update({'output_hidden_states': True})
+        self.bert = BertModel.from_pretrained(self.config.bert_local, config=config_)
+
+        self.ws1 = nn.Linear(self.config.hidden_size * 2, self.config.hidden_size * 2)  # 1024->1024
+        self.ws2 = nn.Linear(self.config.hidden_size * 2, 1)  # 1024->1
+        self.dropout = nn.Dropout(self.config.dropout)
+        self.pre_classifier = nn.Linear(self.config.hidden_size * 2, self.config.hidden_size * 2)  # 1024->512
+        self.classifier = nn.Linear(self.config.hidden_size * 2, self.config.second_num_classes)  # 512->35
+        self.softmax = nn.Softmax(dim=1)
+        self.lstm = nn.LSTM(self.config.embedding_dim * 4, self.config.hidden_size, self.config.num_layers,
+                            bidirectional=True,
+                            batch_first=True,
+                            dropout=config.dropout)
+
+    def forward(self, token_ids, mask, ):
+        out = self.bert(token_ids, attention_mask=mask)
+        # 模型每一层的输出
+        out = torch.stack(out[2])
+        out = torch.cat(
+            (out[-1], out[-2], out[-3], out[-4]), dim=-1
+        )
+        # 上一步的输出：(batch_size, sequence_length, hidden_size*4)
+        sequence_output = out
+        H, _ = self.lstm(sequence_output)
+        self_attention = torch.tanh(self.ws1(self.dropout(H)))
+        self_attention = self.ws2(self.dropout(self_attention)).squeeze()
+        self_attention = self_attention + -10000 * (mask == 0).float()
+        self_attention = self.softmax(self_attention)
+        # 加入attention
+        sent_encoding = torch.sum(H * self_attention.unsqueeze(-1), dim=1)
+        pre_pred = torch.tanh(self.pre_classifier(self.dropout(sent_encoding)))
+        pred = self.classifier(self.dropout(pre_pred))
+        # pred = self.softmax(sent_encoding)
+        return pred
 
 
 if __name__ == '__main__':
