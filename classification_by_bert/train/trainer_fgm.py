@@ -94,4 +94,4 @@ if __name__ == '__main__':
     train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, sampler=sampler)
     dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
     model = Bert4LayerCNN(config).to(config.device)
-    train(config, model, train_dataloader, dev_dataloader, loss_function=FocalLoss(config.second_num_classes, 2))
+    train(config, model, train_dataloader, dev_dataloader, loss_function=FocalLoss(config.second_num_classes))
