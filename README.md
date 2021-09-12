@@ -16,3 +16,8 @@
 数据集长度90%的长度：
 
 ![img.png](https://gitee.com/yxbLovewy/my-pictures/raw/master/img.png)
+
+### 无标注数据集
+| 总行数   | 大于5的行数  |
+| ------- | ----       |
+|14939045 |14939038    |
