@@ -10,7 +10,8 @@ class PreDatasetConfig(object):
     """配置参数"""
 
     def __init__(self):
-        self.train_path = '/home/yxb/DAGUAN2021_classifier/datagrand_2021_unlabeled_data.json'
+        # self.train_path = '/home/yxb/DAGUAN2021_classifier/datagrand_2021_unlabeled_data.json'
+        self.train_path = '../dataset/new_train_json.json'
         self.vocab_path = '../dataset/vocab.txt'
         # 数据集设置
         self.n_raws = 1000
@@ -27,5 +28,5 @@ class PreDatasetConfig(object):
             type_vocab_size=1
         )
         self.lr = 5e-5
-        self.num_epochs = 2
-        self.batch_size = 32
+        self.num_epochs = 10
+        self.batch_size = 24
