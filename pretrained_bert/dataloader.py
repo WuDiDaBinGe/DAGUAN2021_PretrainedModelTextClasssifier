@@ -105,6 +105,58 @@ class BertDataset(Dataset):
         return tokens.to(self.device), attention_mask.to(self.device), labels.to(self.device)
 
 
+class BertFullDataset(Dataset):
+    def __init__(self, config, device):
+        """
+        file_path: the path to the dataset file
+        nraws: each time put nraws sample into memory for shuffle
+        shuffle: whether the data need to shuffle
+        """
+        file_raws = 0
+        self.samples = []
+        # get the count of all samples
+        with open(config.train_path, 'r') as f:
+            for line in f:
+                self.samples.append(line)
+                file_raws += 1
+        assert file_raws == len(self.samples)
+        self.file_path = config.train_path
+        self.config = config
+        self.file_raws = file_raws
+        self.tokenizer = BertTokenizer(config.vocab_path)
+        self.device = device
+
+    # 返回数据集长度，方便tqdm显示进度条长度
+    def __len__(self):
+        return self.file_raws
+
+    # 每次如何读数据
+    def __getitem__(self, item):
+        data = self.samples[item]
+        # 处理文字
+        doc_dict = eval(data)
+        title = doc_dict['title']
+        context = doc_dict['content']
+        full_text = title + " " + context
+        # 将文本字符串转换成token的序列
+        tokenized = self.tokenizer(full_text, max_length=self.config.max_length, padding="max_length", truncation=True)
+        # 需要张量化
+        tokens = torch.tensor(tokenized['input_ids'])
+        attention_mask = torch.tensor(tokenized['attention_mask'])
+        # detach()函数可以返回一个完全相同的tensor,新的tensor开辟与旧的tensor共享内存，新的tensor会脱离计算图，不会牵扯梯度计算
+        # clone()函数可以返回一个完全相同的tensor,新的tensor开辟新的内存，但是仍然留在计算图中。
+        labels = tokens.detach().clone()
+        # 返回一个张量，包含了从区间[0, 1)的均匀分布中抽取的一组随机数
+        rand = torch.rand(tokens.shape)
+        # mask random 15% where token is not 0 [PAD], 1 [CLS], or 2 [SEP]
+        mask_arr = (rand < .15) * (tokens != 101) * (tokens != 102) * (tokens != 0)
+        selection = torch.where(mask_arr == 1)
+        tokens[selection] = 103
+        return tokens.to(self.device), attention_mask.to(self.device), labels.to(self.device)
+
+
+
+
 if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     config = PreDatasetConfig()
