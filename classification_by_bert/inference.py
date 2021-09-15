@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from dataloader import load_data, MyDataset
-from classification_by_bert.model.model import Classifier, ClassifierCNN
+from model.bert_CNN import Bert4LayerCNN
 from config import Config
 
 
@@ -58,15 +58,7 @@ if __name__ == '__main__':
     test_dataset = MyDataset(config=config, dataset=test, device=config.device, test=True)
     test_iter = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
-    model = ClassifierCNN(config).to(config.device)
-    model.load_state_dict(torch.load(r"../dataset/saved_dict/classification_by_bert09-04_10.04.ckpt"))
+    model = Bert4LayerCNN(config).to(config.device)
+    model.load_state_dict(torch.load(r"../dataset/saved_dict/Bert4layerCNN-fgm-aeda09-12_20.12.ckpt"))
 
-    model_asl = Classifier(config).to(config.device)
-    model_asl.load_state_dict(
-        torch.load(r"../dataset/saved_dict/0.57_ACL-loss_baseline/saved_dict/classification_by_bert.ckpt"))
-
-    model_focal = Classifier(config).to(config.device)
-    model_focal.load_state_dict(
-        torch.load(r'../dataset/saved_dict/0.568_focal_loss_baseline/saved_dict/classification_by_bert.ckpt'))
-    model_list = [model_asl, model_focal, model]
-    model_voting_inference(config, model_list, test_iter)
+    inference(config, model, test_iter)

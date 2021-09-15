@@ -4,11 +4,10 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from transformers import BertModel, AutoConfig
 
-from DAGUAN2021_PretrainedModelTextClasssifier.classification_by_bert.model.Multi_Heads import MultiHeadSelfAttention
-from DAGUAN2021_PretrainedModelTextClasssifier.classification_by_bert.config import Config
-from DAGUAN2021_PretrainedModelTextClasssifier.dataloader.dataloader import load_data, MyDataset
+from classification_by_bert.model.Multi_Heads import MultiHeadSelfAttention
+from classification_by_bert.config import Config
+from dataloader.dataloader import load_data, MyDataset
 
-nn.LayerNorm
 
 
 # class Classifier(nn.Module):

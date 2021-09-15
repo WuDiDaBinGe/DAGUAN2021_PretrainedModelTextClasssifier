@@ -4,7 +4,7 @@
 # @FileName: pre_config.py
 # @Software: PyCharm
 from transformers import BertConfig
-
+from transformers import RobertaConfig
 
 class PreDatasetConfig(object):
     """配置参数"""
@@ -27,6 +27,15 @@ class PreDatasetConfig(object):
             num_hidden_layers=6,
             type_vocab_size=1
         )
-        self.lr = 5e-5
+        self.roberta_config = RobertaConfig(
+            vocab_size=30_400,  # we align this to the tokenizer vocab_size
+            max_position_embeddings=514,
+            hidden_size=768,
+            num_attention_heads=12,
+            num_hidden_layers=6,
+            type_vocab_size=1
+        )
+
+        self.lr = 1e-4
         self.num_epochs = 10
         self.batch_size = 24

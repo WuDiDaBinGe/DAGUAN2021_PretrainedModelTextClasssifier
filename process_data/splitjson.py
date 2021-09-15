@@ -32,8 +32,8 @@ def split_json0(filename):
     val_list = []
     for i in range(10000000):
         val_list.append(json_string[i])
-        if (1 % 10000 == 0):
-            print("已处理 %s 条数据" % (i))
+        if 1 % 10000 == 0:
+            print("已处理 %s 条数据" % i)
 
     with open('new.json', 'w') as f:
         json.dump(val_list, f)
@@ -54,26 +54,26 @@ def split_json(inputfile):
                 str = json.dumps(doc_dict) + '\n'
                 f_out.write(str)
                 totalnum = totalnum + 1
-            if num > 2000000 and num < 2500000:
+            if 2000000 < num < 2500000:
                 doc_dict = eval(doc)
                 # son.dumps()把dict降级为字符串
                 str = json.dumps(doc_dict) + '\n'
                 f_out.write(str)
                 totalnum = totalnum + 1
-            if num > 4000000 and num < 4500000:
+            if 4000000 < num < 4500000:
                 doc_dict = eval(doc)
                 # son.dumps()把dict降级为字符串
                 str = json.dumps(doc_dict) + '\n'
                 f_out.write(str)
                 totalnum = totalnum + 1
-            if num>6000000:
+            if num > 6000000:
                 doc_dict = eval(doc)
                 # son.dumps()把dict降级为字符串
                 str = json.dumps(doc_dict) + '\n'
                 f_out.write(str)
                 totalnum = totalnum + 1
 
-            if (totalnum % 10000 == 0):
+            if totalnum % 10000 == 0:
                 print("已处理 %s 条数据" % (num))
             if totalnum > 1500000:
                 break
@@ -81,11 +81,31 @@ def split_json(inputfile):
     f_out.close()
 
 
+def split_4_dataset(input_file, out_file, sub_nums=4):
+    total_num = 0
+    num = 0
+    file_list = []
+    for i in range(sub_nums):
+        file_list.append(open(out_file + f'/subset_{i}.json'))
+    with open(input_file, 'r', encoding='utf-8'  ) as f:
+        for doc in f:
+            total_num += 1
+            doc_dict = eval(doc)
+            doc_vob = doc_dict['title'].split(" ") + doc_dict['content'].split(" ")
+            if len(doc_vob) > 15:
+                flag = num % sub_nums
+                if flag == 0:
+                    pass
+                elif flag == 1:
+                    pass
+                elif flag == 2:
+                    pass
+                elif flag == 3:
+                    pass
+                num += 1
+
+
 if __name__ == '__main__':
     file = '/home/wsj/dataset/2021达观杯/datagrand_2021_unlabeled_data.json'
     file_test = 'process_data/test.json'
     split_json(file)
-
-# data1 = [{"a": "Amo", "b": (9, 99), "c": 6.6, "d": 11},{"a": "Amo", "b": (9, 99), "c": 6.6, "d": 11}]
-# print("正常: ", json.dumps(data1, allow_nan=False, sort_keys=True))
-# print("缩进显示: ", json.dumps(data1, allow_nan=False, sort_keys=True, indent=2))

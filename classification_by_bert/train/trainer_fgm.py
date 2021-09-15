@@ -25,6 +25,7 @@ torch.manual_seed(1)
 torch.cuda.manual_seed_all(1)
 torch.backends.cudnn.deterministic = True  # 保证每次结果一样
 
+
 def train(config, model, train_dataset, dev_dataset, loss_function):
     # (precision, recall, macro_f1, _), dev_loss, micro_f1 = evaluate(config, model, dev_dataset)
     # return
@@ -77,9 +78,9 @@ def train(config, model, train_dataset, dev_dataset, loss_function):
 
 
 if __name__ == '__main__':
-    config = Config(dataset='../../dataset/', name='Bert4layerCNN')
+    config = Config(dataset='../../dataset/', name='Bert4layerCNN-fgm-aeda')
 
-    all_set = load_data(config.train_path)
+    all_set = load_data(config.train_argument_path)
     train_dataset = MyDataset(config=config, dataset=all_set, device=config.device)
 
     dev_set = load_data(config.dev_path)
@@ -94,4 +95,4 @@ if __name__ == '__main__':
     train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, sampler=sampler)
     dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
     model = Bert4LayerCNN(config).to(config.device)
-    train(config, model, train_dataloader, dev_dataloader, loss_function=FocalLoss(config.second_num_classes))
+    train(config, model, train_dataloader, dev_dataloader, loss_function=F.cross_entropy)

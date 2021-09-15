@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from config import Config
 from dataloader import load_data, MyDataset
-from model import ClassifierCNN
+from model.bert_CNN import Bert4LayerCNN
 
 
 def evaluate(config, model, dev_dataset):
@@ -37,11 +37,11 @@ def evaluate(config, model, dev_dataset):
 
 
 if __name__ == '__main__':
-    config = Config(dataset='../dataset')
+    config = Config(dataset='../dataset', name='Bert4LayerCNN')
     dev_set = load_data(config.dev_path)
     dev_dataset = MyDataset(config=config, dataset=dev_set, device=config.device)
     dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
-    model = ClassifierCNN(config).to(config.device)
+    model = Bert4LayerCNN(config).to(config.device)
     model.load_state_dict(torch.load(
-        "/home/kevin/PycharmProjects/DAGUAN2021_PretrainedModelTextClasssifier/dataset/saved_dict/classification_by_bert09-04_10.04.ckpt"))
+        "../dataset/saved_dict/Bert4layerCNN09-08_15.42.ckpt"))
     evaluate(config, model, dev_dataloader)

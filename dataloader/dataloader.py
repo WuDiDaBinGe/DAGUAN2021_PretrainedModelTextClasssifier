@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
 import torch
-from DAGUAN2021_PretrainedModelTextClasssifier.classification_by_bert.config import Config
+from classification_by_bert.config import Config
 
 
 def load_data(dir_path, vobsize=30355, test=False):

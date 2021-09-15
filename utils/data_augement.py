@@ -188,7 +188,8 @@ def eda(sentence, alpha_sr=0.1, alpha_ri=0.1, alpha_rs=0.1, p_rd=0.1, num_aug=9,
     return augmented_sentences
 
 
-def get_label_to_eda(dataset, low_num=200):
+def get_label_to_eda(dataset, low_num=190):
+    import math
     # 统计各类别的样本数
     c = dataset.groupby(['2-label'], as_index=False)['2-label'].agg({'cnt': 'count'})
     c.sort_values('2-label', ascending=True, inplace=True)
@@ -197,7 +198,7 @@ def get_label_to_eda(dataset, low_num=200):
     target_labels_num = target_labels.iloc[:, 1].values
     target_label_num_dict = {}
     for index, label in enumerate(target_labels_list):
-        target_label_num_dict[label] = int(low_num / target_labels_num[index])
+        target_label_num_dict[label] = round(((low_num-target_labels_num[index])/target_labels_num[index]))
     return target_label_num_dict
 
 
@@ -210,6 +211,7 @@ def aeda(sentence, num_arguments=1, ratio=0.3):
         print(argument_words)
         augmented_sentences.append(' '.join(argument_words))
     return augmented_sentences
+
 
 if __name__ == '__main__':
     # 数据集增强
@@ -224,25 +226,24 @@ if __name__ == '__main__':
 
     data_augment_df = {'id': [], 'text': [], 'label': []}
     for index, row in train.iterrows():
-        # if row['2-label'] in target_label_num_dict.keys():
-        #     row_text = row['text']
-        #     target_label_single_aug_num = target_label_num_dict[row['2-label']]
-        #     augmented_sentences = eda(row_text, num_aug=target_label_single_aug_num, alpha_sr=-1, alpha_ri=-1,
-        #                               method_num=2)
-        #     if len(augmented_sentences) > 0:
-        #         for sent in augmented_sentences:
-        #             last_id += 1
-        #             data_augment_df['id'].append(last_id)
-        #             data_augment_df['text'].append(sent)
-        #             data_augment_df['label'].append(row['label'])
-        row_text = row['text']
-        augmented_sentences = aeda(row_text)
-        if len(augmented_sentences) > 0:
-            for sent in augmented_sentences:
-                last_id += 1
-                data_augment_df['id'].append(last_id)
-                data_augment_df['text'].append(sent)
-                data_augment_df['label'].append(row['label'])
+        if row['2-label'] in target_label_num_dict.keys():
+            row_text = row['text']
+            target_label_single_aug_num = target_label_num_dict[row['2-label']]
+            augmented_sentences = aeda(row_text, num_arguments=target_label_single_aug_num)
+            if len(augmented_sentences) > 0:
+                for sent in augmented_sentences:
+                    last_id += 1
+                    data_augment_df['id'].append(last_id)
+                    data_augment_df['text'].append(sent)
+                    data_augment_df['label'].append(row['label'])
+        # row_text = row['text']
+        # augmented_sentences = aeda(row_text)
+        # if len(augmented_sentences) > 0:
+        #     for sent in augmented_sentences:
+        #         last_id += 1
+        #         data_augment_df['id'].append(last_id)
+        #         data_augment_df['text'].append(sent)
+        #         data_augment_df['label'].append(row['label'])
     data_augment_df = pd.DataFrame(data_augment_df)
     total_frame = pd.concat([row_train, data_augment_df])
     # shuffle
