@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2021/9/14 下午3:49
 # @Author  : WuDiDaBinGe
-# @FileName: process_file_train_reberta_token.py
+# @FileName: process_file_train_roberta_token.py
 # @Software: PyCharm
 from tqdm import tqdm
 
@@ -11,6 +11,7 @@ def process_all_data_to_many_file(input_file_path, out_dir):
     file_count = 0
     text_data = []
     with open(input_file_path, 'r', encoding='utf-8') as f:
+        # TODO:修改数据总数
         for index, doc in enumerate(tqdm(f, total=1500001)):
             doc_dict = eval(doc)
             total_rows += 1
