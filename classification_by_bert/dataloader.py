@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset
-from transformers import BertTokenizer
+from transformers import BertTokenizer,RobertaTokenizer
 
 from classification_by_bert.config import Config
 
@@ -32,12 +32,15 @@ def spilt_dataset_pd(dataset, frac=0.2):
 
 
 class MyDataset(Dataset):
-    def __init__(self, config, dataset, device, test=False):
+    def __init__(self, config, dataset, device, test=False, roberta=False):
         super(MyDataset, self).__init__()
         self.config = config
         # tokenizer是一个将纯文本转换为编码的过程，该过程不涉及将词转换成为词向量，仅仅是对纯文本进行分词，并且添加[MASK]、[SEP]、[CLS]标记，然后将这些词转换为字典索引。
         # 载入词汇表
-        self.tokenizer = BertTokenizer(config.vocab_path)
+        if roberta:
+            self.tokenizer = RobertaTokenizer.from_pretrained(config.roberta_vocab_path)
+        else:
+            self.tokenizer = BertTokenizer(config.vocab_path)
         self.dataset = dataset
         # loc函数：通过行索引 "Index" 中的具体值来取行数据
         # iloc函数：通过行号来取行数据

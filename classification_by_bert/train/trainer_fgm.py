@@ -78,13 +78,13 @@ def train(config, model, train_dataset, dev_dataset, loss_function):
 
 
 if __name__ == '__main__':
-    config = Config(dataset='../../dataset/', name='Bert4layerCNN-fgm-aeda')
+    config = Config(dataset='../../dataset', name='Roberta4layerCNN-fgm-aeda')
 
-    all_set = load_data(config.train_argument_path)
-    train_dataset = MyDataset(config=config, dataset=all_set, device=config.device)
+    all_set = load_data(config.train_path)
+    train_dataset = MyDataset(config=config, dataset=all_set, device=config.device, roberta=True)
 
     dev_set = load_data(config.dev_path)
-    dev_dataset = MyDataset(config=config, dataset=dev_set, device=config.device)
+    dev_dataset = MyDataset(config=config, dataset=dev_set, device=config.device, roberta=True)
     # 重要性采样
     sample_weights = 1.0 / torch.tensor(config.every_class_nums, dtype=torch.float)
     train_targets = train_dataset.get_all_classes()
@@ -94,5 +94,8 @@ if __name__ == '__main__':
     # shuffle 是 false
     train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, sampler=sampler)
     dev_dataloader = DataLoader(dev_dataset, batch_size=config.batch_size, shuffle=True)
-    model = Bert4LayerCNN(config).to(config.device)
-    train(config, model, train_dataloader, dev_dataloader, loss_function=F.cross_entropy)
+
+    model = Bert4LayerCNN(config, roberta=True).to(config.device)
+    #  TODO: load checkpoint
+    # model.load_state_dict(torch.load(r'../../dataset/saved_dict/Bert4layerCNN-fgm-aeda09-15_11.01.ckpt'))
+    train(config, model, train_dataloader, dev_dataloader, loss_function=FocalLoss(class_num=config.second_num_classes))

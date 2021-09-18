@@ -24,7 +24,7 @@ class WAE(nn.Module):
             for i in range(len(decode_dim) - 1)
         })
         assert encode_dims[-1] == decode_dim[0]
-        self.latent_dim = decode_dim[1]
+        self.latent_dim = decode_dim[0]
         self.dropout = nn.Dropout(p=dropout)
         self.nonlin = {'relu': F.relu, 'sigmoid': torch.sigmoid}[nonlin]
 
@@ -55,6 +55,7 @@ class WAE(nn.Module):
             z_true = np.random.dirichlet(
                 np.ones(self.latent_dim) * dirichlet_alpha, size=batch_size)
             z_true = torch.from_numpy(z_true).float()
+            return z_true
         elif dist == 'gaussian':
             z_true = np.random.randn(batch_size, self.z_dim)
             z_true = torch.softmax(torch.from_numpy(z_true), dim=1).float()
@@ -81,13 +82,13 @@ class WAE(nn.Module):
             return self.sample(dist='dirichlet', batch_size=batch_size)
 
     def mmd_loss(self, x, y, device, t=0.1, kernel='diffusion'):
-        '''
-                computes the mmd loss with information diffusion kernel
-                :param x: batch_size * latent dimension
-                :param y:
-                :param t:
-                :return:
-                '''
+        """
+        computes the mmd loss with information diffusion kernel
+        :param x: batch_size * latent dimension
+        :param y:
+        :param t:
+        :return:
+        """
         eps = 1e-6
         n, d = x.shape
         if kernel == 'tv':

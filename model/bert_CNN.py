@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from classification_by_bert.config import Config
 from torch import nn
-from transformers import BertModel, AutoConfig
+from transformers import BertModel, AutoConfig,RobertaModel
 import torch.nn.functional as F
 
 from classification_by_bert.dataloader import load_data, MyDataset
@@ -42,13 +42,20 @@ class BertCNN(nn.Module):
 
 
 class Bert4LayerCNN(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, roberta=False):
         super(Bert4LayerCNN, self).__init__()
         self.config = config
-        config_ = AutoConfig.from_pretrained(config.bert_local)
-        # 获取每层的输出
-        config_.update({'output_hidden_states': True})
-        self.bert = BertModel.from_pretrained(self.config.bert_local, config=config_)
+
+        if roberta:
+            config_ = AutoConfig.from_pretrained(config.roberta_local)
+            # 获取每层的输出
+            config_.update({'output_hidden_states': True})
+            self.bert = RobertaModel.from_pretrained(self.config.roberta_local, config=config_)
+        else:
+            config_ = AutoConfig.from_pretrained(config.bert_local)
+            # 获取每层的输出
+            config_.update({'output_hidden_states': True})
+            self.bert = BertModel.from_pretrained(self.config.bert_local, config=config_)
         self.convs = nn.ModuleList(
             [nn.Conv2d(1, config.num_filters, (k, 4 * config.embedding_dim)) for k in config.filter_sizes]
         )
